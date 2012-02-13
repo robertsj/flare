@@ -1,0 +1,30 @@
+BIBLIS BENCHMARK
+&specs
+delta=21.0 number_materials=3 number_bundles=7 stencil_dimension=4
+/
+&model
+mixing_factor=0.88 alphaI=0.22 alphaII=0.55
+/
+\\\ Stencil. Nonzeros represent materials and zeros symmetry and reflector.
+   2  2  2  0
+   0  2  2  0
+   0  2  2  0
+   0  0  0  0
+\\\ D1
+    1.4493e+00  1.4479e+00  1.4494e+00
+\\\ D2
+    3.8070e-01  3.7080e-01  3.6760e-01
+\\\ R1
+    2.5000e-02  2.5800e-02  2.6200e-02
+\\\ A2
+    1.0420e-01  1.2000e-01  1.1910e-01
+\\\ F1
+    7.9000e-03  6.9000e-03  6.0000e-03
+\\\ F2
+    1.6920e-01  1.7450e-01  1.6250e-01
+\\\ S12
+    1.5100e-02  1.4800e-02  1.4700e-02
+
+
+
+

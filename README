@@ -1,0 +1,23 @@
+README
+======
+
+The FLARE model is an old, outdated, but fast technique for 
+core physics calculations.  This implementation is for
+2-d calculations, mostly in support of poropy, the 
+educational reactor physics optimization toolkit.
+
+We provide a Fortran 90 code for which the user can write
+simple text inputs.  Alternatively, all the modules can be
+accessed in Python via use of f2py (which must be installed). 
+
+To build the executable, 
+
+>> make flare
+
+To build the python module
+
+>> make pyflare
+
+
+
+
