@@ -24,7 +24,7 @@ program flare
   integer :: io, uinp = 5, i, j
 
   namelist /specs/ delta, number_materials, number_bundles, stencil_dimension
-  namelist /model/ mixing_factor, alphaI, alphaII
+  namelist /model/ mixing_factor, alpha1, alpha2
 
   print *, "=========================="
   print *, "= a FLARE implementation ="

@@ -92,7 +92,7 @@ neat:
 	@rm -f *.o *.mod
 
 pyflare:
-	f2py --opt="-O3" -c -m pyflare group_data.f90 geometry.f90 state.f90 coefficients.f90 solver.f90
+	f2py --opt="-fast" -c -m pyflare group_data.f90 geometry.f90 state.f90 coefficients.f90 solver.f90
 
 #===============================================================================
 # Rules

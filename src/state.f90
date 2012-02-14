@@ -71,20 +71,29 @@ contains
   !=============================================================================
   subroutine print_peaking()
     integer :: i, j, k
-    peaking_map = 0.0
+    call make_peaking_map()
     print *, "------------------------------------------------------------------------------------------"
     print *, "peaking map = "
+    do i = 1, stencil_dimension
+      print '(9f10.6)', peaking_map(i, :)
+    end do
+    print *, "-------------------------------------------------------------------------------------------"
+  end subroutine print_peaking
+
+  !=============================================================================
+  !> @brief Make assembly power peaking factor map.
+  !=============================================================================
+  subroutine make_peaking_map()
+    integer :: i, j, k
+    peaking_map = 0.0
     do i = 1, stencil_dimension
       do j = 1, stencil_dimension
         if (stencil(i, j) .gt. 0) then
           peaking_map(i, j) = assembly_peaking(stencil(i, j))
         end if
       end do
-      print '(9f10.6)', peaking_map(i, :)
     end do
-    print *, "-------------------------------------------------------------------------------------------"
-  end subroutine print_peaking
-
+  end subroutine make_peaking_map
   !=============================================================================
   !> @brief Deallocate state
   !=============================================================================

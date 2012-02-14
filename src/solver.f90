@@ -14,6 +14,8 @@ module solver
 
   implicit none
 
+  integer :: verbose = 0
+
 contains
 
   !============================================================================
@@ -89,13 +91,14 @@ contains
     assembly_peaking = s / mean_s
     max_assembly_peaking = maxval(assembly_peaking)
 
-    print *, "------------------------------"
-    print '(a, i10)',   " iterations = ", j
-    print '(a, f10.6)', "       keff = ", k
-    print '(a, f10.6)', " keff resid = ", kerr
-    print '(a, f10.6)', "   fd resid = ", serr
-    print *, "------------------------------"
-
+    if (verbose .eq. 1) then
+      print *, "------------------------------"
+      print '(a, i10)',   " iterations = ", j
+      print '(a, f10.6)', "       keff = ", k
+      print '(a, f10.6)', " keff resid = ", kerr
+      print '(a, f10.6)', "   fd resid = ", serr
+      print *, "------------------------------"
+    end if
   end subroutine solve
 
   double precision function norm(v)

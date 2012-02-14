@@ -16,7 +16,7 @@ module coefficients
   double precision, allocatable :: wpp(:), wqp(:), wleak(:), kinf(:)
 
   !> Model parameters (with defaults)
-  double precision :: mixing_factor = 0.88, alphaI = 0.22, alphaII = 0.65
+  double precision :: mixing_factor=0.88, alpha1=0.3, alpha2=0.6
 
 contains
 
@@ -34,6 +34,16 @@ contains
               wqp(number_bundles), kinf(number_bundles) )
   end subroutine initialize_coefficients
 
+  !============================================================================
+  !> @brief Set model parameters.
+  !============================================================================
+  subroutine set_model(g, a1, a2)
+    double precision, intent(in) :: g, a1, a2
+    mixing_factor = g
+    alpha1 = a1
+    alpha2 = a2
+  end subroutine set_model
+
 
   !============================================================================
   !> @brief Compute coefficients.
@@ -49,9 +59,8 @@ contains
 
     ! Now, compute the coefficients, wpp and wqp.  
     g   = mixing_factor
-    aI  = alphaI
-    aII = alphaII
-
+    aI  = alpha1
+    aII = alpha2
     do i = 1, number_bundles
       ! Bundle id
       id = pattern(i)
