@@ -17,7 +17,7 @@ solver.o
 #===============================================================================
 
 COMPILER = ifort
-DEBUG    = yes
+DEBUG    = no
 OPTIMIZE = yes
 PROFILE  = no
 PYTHON   = yes

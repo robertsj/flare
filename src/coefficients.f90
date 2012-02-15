@@ -61,6 +61,11 @@ contains
     g   = mixing_factor
     aI  = alpha1
     aII = alpha2
+
+!    print *, "      g = ", mixing_factor
+!    print *, " alpha1 = ", alpha1
+!    print *, " alpha2 = ", alpha2
+
     do i = 1, number_bundles
       ! Bundle id
       id = pattern(i)
@@ -90,7 +95,7 @@ contains
       ! My leakage to another
       wqp(i) = w  
     end do
-
+    
   end subroutine build_coefficients
 
 end module coefficients

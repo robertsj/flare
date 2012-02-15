@@ -24,7 +24,7 @@ program flare
   integer :: io, uinp = 5, i, j
 
   namelist /specs/ delta, number_materials, number_bundles, stencil_dimension
-  namelist /model/ mixing_factor, alpha1, alpha2
+  namelist /options/ mixing_factor, alpha1, alpha2, verbose
 
   print *, "=========================="
   print *, "= a FLARE implementation ="
@@ -45,7 +45,7 @@ program flare
 
   ! Read namelists
   read (uinp, nml=specs)
-  read (uinp, nml=model)
+  read (uinp, nml=options)
 
   ! Initialize geometry and read in stencil
   call initialize_geometry()
@@ -83,8 +83,9 @@ program flare
   ! SOLVE
   !============================================================================!
 
+  do i = 1, 1
   call solve()
-
+  end do
   !============================================================================!
   ! POST PROCESS, etc.
   !============================================================================!

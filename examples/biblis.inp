@@ -5,8 +5,11 @@ number_materials=8
 number_bundles=49 
 stencil_dimension=9
 /
-&model 
-mixing_factor=-1.5359	alphaI=0.0863	alphaII=0.2306
+&options 
+mixing_factor=0.98850	
+alpha1=-0.13804	
+alpha2=-0.00405
+verbose=0
 /
 \\\ Stencil. Nonzeros represent materials and zeros symmetry and reflector.
   1  8  2  6  1  7  1  4  0 
@@ -45,6 +48,4 @@ mixing_factor=-1.5359	alphaI=0.0863	alphaII=0.2306
   0  4  4  4  0  0  0  0  0
   0  0  0  0  0  0  0  0  0
 
-model 1: mixing_factor=-1.071 alphaI=0.068 alphaII=0.207
-model 2: mixing_factor=-0.242 alphaI=-0.165 alphaII=-0.053
-model 3: mixing_factor=-1.5359	alphaI=0.0863	alphaII=0.2306
+model 1: 0.9884979114056625	-0.13803858216284481	-0.004050725958076542

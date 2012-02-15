@@ -27,6 +27,11 @@ contains
 
   !============================================================================
   !> @brief Solve the problem.
+  !>
+  !> The solution approach is pretty simple, using a series of Jacobi inner
+  !> iterations followed by outer k-updates.  The bounds were found to yield
+  !> convergence in about 70 iterations for a "typical" problem.   (Having 
+  !> some inners helps avoid "false" convergence, too)
   !============================================================================
   subroutine solve()
     ! local
@@ -34,7 +39,8 @@ contains
     double precision :: k,                   & ! temporary current keff
                         k_o,                 & ! temporary past keff
                         s(number_bundles),   & ! temporary current density
-                        s_o(number_bundles), & ! temporary past density
+                        s_o(number_bundles), & ! temporary past density (inners)
+                        s_oo(number_bundles),& ! temporary past density (outers)
                         k_num,               & ! numerator in keff expression
                         k_den,               & ! denomenator in keff expression
                         serr,                & ! density residual
@@ -49,22 +55,27 @@ contains
     
     ! Update coefficients
     call build_coefficients()
-        
+
     ! Outer iteration.
-    OUTER: do j = 1, 200
-                
-      ! Jacobi inner iteration (could do more than one)
-      s_o = s
-      do p = 1, number_bundles
-        s(p) = wpp(p) * s_o(p)
-        do q = 1, 4
-          if (neighbors(p, q) .gt. 0) then
-            qq   = neighbors(p, q)
-            s(p) = s(p) + wqp(qq)*s_o(qq)*kinf(qq)/k
-          end if
-        end do
-        s(p) = s(p) * kinf(p) / k
-      end do      
+    OUTER: do j = 1, 100
+      s_oo = s       
+         
+      ! Jacobi inner iteration
+      INNER: do i = 1, 10
+        s_o = s
+        do p = 1, number_bundles
+          s(p) = wpp(p) * s_o(p)
+          do q = 1, 4
+            if (neighbors(p, q) .gt. 0) then
+              qq   = neighbors(p, q)
+              s(p) = s(p) + wqp(qq)*s_o(qq)
+            end if
+          end do
+          s(p) = s(p) * kinf(p) / k
+        end do      
+      end do INNER
+      s = s / norm(s)
+
       ! Update k
       k_o = k
       k_num = 0.0
@@ -74,12 +85,10 @@ contains
         k_den = k_den + s(i)/kinf(i)
       end do
       k = (sum(s) - k_num) / k_den
-      s = s / norm(s)
-
       ! Update errors.  Check only density, as k always converges faster.
       kerr = abs(k - k_o)
-      serr = norm(s - s_o) 
-      if  (serr < 1e-4) then
+      serr = norm(s - s_oo) 
+      if  (kerr < 0.0001 .and. serr < 0.001) then
         exit
       end if
 

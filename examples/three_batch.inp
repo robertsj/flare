@@ -1,15 +1,26 @@
-BIBLIS BENCHMARK
+Simple three batch problem
 &specs
-delta=21.0 number_materials=3 number_bundles=7 stencil_dimension=4
+delta=21.0 
+number_materials=3 
+number_bundles=49 
+stencil_dimension=9
 /
-&model
-mixing_factor=0.88 alphaI=0.22 alphaII=0.55
+&options
+mixing_factor=0.9302
+alpha1=-0.0144
+alpha2=0.0431
+verbose=1
 /
 \\\ Stencil. Nonzeros represent materials and zeros symmetry and reflector.
-   2  2  2  0
-   0  2  2  0
-   0  2  2  0
-   0  0  0  0
+    3  1  2  1  2  1  2  3  0
+    0  2  1  2  1  2  1  3  0
+    0  1  2  1  2  1  2  3  0
+    0  2  1  2  1  2  3  3  0
+    0  1  2  1  2  1  3  0  0
+    0  2  1  2  1  2  3  0  0
+    0  1  2  3  3  3  0  0  0
+    0  3  3  3  0  0  0  0  0
+    0  0  0  0  0  0  0  0  0
 \\\ D1
     1.4493e+00  1.4479e+00  1.4494e+00
 \\\ D2
@@ -27,4 +38,24 @@ mixing_factor=0.88 alphaI=0.22 alphaII=0.55
 
 
 
+Checkerboard
+    3  1  2  1  2  1  2  3  0
+    0  2  1  2  1  2  1  3  0
+    0  1  2  1  2  1  2  3  0
+    0  2  1  2  1  2  3  3  0
+    0  1  2  1  2  1  3  0  0
+    0  2  1  2  1  2  3  0  0
+    0  1  2  3  3  3  0  0  0
+    0  3  3  3  0  0  0  0  0
+    0  0  0  0  0  0  0  0  0
 
+Ring of fire
+    3  2  1  3  1  2  3  3  0
+    0  2  3  1  2  2  1  3  0
+    0  3  1  2  2  1  1  3  0
+    0  1  2  2  2  2  1  3  0
+    0  2  2  2  2  1  1  0  0
+    0  2  1  2  1  2  3  0  0
+    0  1  1  1  1  3  0  0  0
+    0  3  3  3  0  0  0  0  0
+    0  0  0  0  0  0  0  0  0
