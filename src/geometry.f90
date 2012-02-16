@@ -10,10 +10,10 @@
 !> quarter cores can be modeled.  An example small model is 
 !> @verbatim
 !>       [  2,  1,  1,  1,  1,  0 , 
-!>          0,  1,  1,  1,  1,  0 ,
-!>          0,  1,  1,  1,  1,  0 ,
-!>          0,  1,  1,  1,  0,  0 ,
-!>          0,  1,  1,  0,  0,  0 , 
+!>         -1,  1,  1,  1,  1,  0 ,
+!>         -1,  1,  1,  1,  1,  0 ,
+!>         -1,  1,  1,  1,  0,  0 ,
+!>         -1,  1,  1,  0,  0,  0 , 
 !>          0,  0,  0,  0,  0,  0 ]
 !> @endverbatim
 !> where a nonzero represents fuel (different values denoting possible 
@@ -63,7 +63,8 @@ contains
   !============================================================================
   subroutine initialize_geometry()
     
-    if (.not. allocated(stencil)) allocate(stencil(stencil_dimension, stencil_dimension))
+    if (.not. allocated(stencil)) &
+      allocate(stencil(stencil_dimension, stencil_dimension))
     if (.not. allocated(pattern)) allocate(pattern(number_bundles))
   end subroutine
 
@@ -101,6 +102,8 @@ contains
           number_per_col(j) = number_per_col(j) + 1
         else if (stencil(i, j) .eq. 0) then
           continue
+        else if (stencil(i, j) .eq. -1) then
+          stencil(i, j) = 0
         end if
       end do
     end do
@@ -128,7 +131,7 @@ contains
     do i = 1, n
       do j = 1, n
         ! skip the first element, elements defined by symmetry, and reflector
-        if (((i .eq. 1) .and. (j .eq. 1)) .or. stencil(i, j) .eq. 0) then
+        if (((i .eq. 1) .and. (j .eq. 1)) .or. stencil(i, j) .le. 0) then
           ! nothing
         else
           k = k + 1
