@@ -23,6 +23,7 @@ contains
   !============================================================================
   subroutine initialize_solver()
     ! nothing for now
+    ! make sure to deallocate before allocating
   end subroutine initialize_solver
 
   !============================================================================

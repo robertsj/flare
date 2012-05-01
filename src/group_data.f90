@@ -48,7 +48,7 @@ contains
   !=============================================================================
   subroutine deallocate_group_data()
 
-    deallocate(D1, D2, A1, A2, F1, F2, S12, R1, K1, K2)
+    if (allocated(D1)) deallocate(D1, D2, A1, A2, F1, F2, S12, R1, K1, K2)
 
   end subroutine deallocate_group_data
 
