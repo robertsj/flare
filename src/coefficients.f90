@@ -30,6 +30,12 @@ contains
   !> @brief Initialize coefficients.
   !============================================================================
   subroutine initialize_coefficients()
+  
+    if (allocated(wleak)) deallocate(wleak)
+    if (allocated(wpp)) deallocate(wpp)
+    if (allocated(wqp)) deallocate(wqp)
+    if (allocated(kinf)) deallocate(kinf)
+    
     allocate( wleak(number_bundles), wpp(number_bundles), &
               wqp(number_bundles), kinf(number_bundles) )
   end subroutine initialize_coefficients

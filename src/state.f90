@@ -33,6 +33,8 @@ contains
   !=============================================================================
   subroutine initialize_state()
 
+    if (allocated(fission_density)) call deallocate_state()
+    
     allocate(fission_density(number_bundles),                 &
              assembly_peaking(number_bundles),                & 
              peaking_map(stencil_dimension, stencil_dimension))
