@@ -27,7 +27,7 @@ geometry.stencil = np.array([[1,8,2,6,1,7,1,4,0],
 geometry.number_bundles = 49
 geometry.stencil_dimension = 9
 geometry.initialize_geometry()
-geometry.delta = 21.0
+geometry.delta = 23.1226
 geometry.build_geometry()
 
 # Set the group data.
@@ -46,10 +46,12 @@ for i in range(0, geometry.number_bundles) :
   group_data.f1[i]  = f1[geometry.pattern[i]-1]
   group_data.f2[i]  = f2[geometry.pattern[i]-1]
   group_data.s12[i] = s12[geometry.pattern[i]-1]
-
+pattern = np.asarray(range(1, geometry.number_bundles+1))
+geometry.set_pattern(pattern)
 
 # Initialize
 coefficients.initialize_coefficients()
+coefficients.set_model(0.98850, -0.13804, -0.00405)
 state.initialize_state()
 solver.initialize_solver()
 
@@ -60,5 +62,6 @@ for i in range(0, number) :
 elapsed = (time.time() - start)
 print elapsed/number, "seconds per run"
 
-
+state.print_state()
+state.print_peaking()
 
