@@ -8,7 +8,12 @@ objects =               \
 flare.o                 \
 geometry.o              \
 coefficients.o          \
-group_data.o            \
+material_data.o         \
+nuclear_data.o          \
+nuclear_data_NOBP.o     \
+nuclear_data_IFBA.o     \
+nuclear_data_WABA.o     \
+nuclear_data_GAD.o      \
 state.o                 \
 solver.o       
 
@@ -16,7 +21,7 @@ solver.o
 # User Options
 #===============================================================================
 
-COMPILER = ifort
+COMPILER = gnu
 DEBUG    = no
 OPTIMIZE = yes
 PROFILE  = no
@@ -28,11 +33,10 @@ PYTHON   = yes
 F90 = gfortran
 ifeq ($(COMPILER),gnu)
   F90 = gfortran
-  F90FLAGS := -fbacktrace
+  F90FLAGS = -fbacktrace -ffree-line-length-none -fPIC
   LDFLAGS = 
   LIB = 
-  #INCLUDE = -I ./rng/
-
+ 
   # Debugging
   ifeq ($(DEBUG),yes)
     F90FLAGS += -g -Wall -pedantic -std=f2008 -fbounds-check \
@@ -57,7 +61,6 @@ ifeq ($(COMPILER),ifort)
   F90FLAGS := 
   LDFLAGS = 
   LIB =
-  #INCLUDE = -I ./rng/
 
   # Debugging
   ifeq ($(DEBUG),yes)
@@ -92,7 +95,7 @@ neat:
 	@rm -f *.o *.mod
 
 pyflare:
-	f2py --opt="-fast" -c -m pyflare group_data.f90 geometry.f90 state.f90 coefficients.f90 solver.f90
+	f2py2.7 --opt="-O3" -c -m pyflare group_data.f90 geometry.f90 state.f90 coefficients.f90 solver.f90
 
 #===============================================================================
 # Rules
@@ -108,10 +111,10 @@ pyflare:
 # Dependencies
 #===============================================================================
 
-coefficients.o: group_data.o
+coefficients.o: material_data.o
 coefficients.o: geometry.o
 
-flare.o: group_data.o
+flare.o: material_data.o
 flare.o: geometry.o
 flare.o: coefficients.o
 flare.o: state.o
@@ -120,7 +123,15 @@ flare.o: solver.o
 solver.o: coefficients.o
 solver.o: geometry.o
 solver.o: state.o
+solver.o: material_data.o
 
 state.o: geometry.o
+
+material_data.o: nuclear_data.o
+
+nuclear_data.o: nuclear_data_NOBP.o
+nuclear_data.o: nuclear_data_IFBA.o
+nuclear_data.o: nuclear_data_WABA.o
+nuclear_data.o: nuclear_data_GAD.o
 
 

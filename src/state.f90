@@ -7,7 +7,7 @@
 !==============================================================================!
 module state
 
-  use geometry, only: number_bundles, stencil_dimension, stencil
+  use geometry, only: number_assemblies, stencil_dimension, stencil
 
   implicit none
 
@@ -20,11 +20,17 @@ module state
   !> Assembly power peaking factors
   double precision, allocatable :: assembly_peaking(:)
 
+  !> Power peaking map
+  double precision, allocatable :: peaking_map(:, :)
+
   !> Maximum assembly power peaking factor
   double precision :: max_assembly_peaking
 
-  !> Power peaking map
-  double precision, allocatable :: peaking_map(:, :)
+  !> Burnup at which the max peaking was computed
+  double precision :: burnup_at_max_assembly_peaking
+
+  !> Cycle length (i.e., burnup at keff = 1.0)
+  double precision :: cycle_length
 
 contains
 
@@ -35,11 +41,12 @@ contains
 
     if (allocated(fission_density)) call deallocate_state()
     
-    allocate(fission_density(number_bundles),                 &
-             assembly_peaking(number_bundles),                & 
+    allocate(fission_density(number_assemblies),                 &
+             assembly_peaking(number_assemblies),                &
              peaking_map(stencil_dimension, stencil_dimension))
     keff = 1.0
     max_assembly_peaking = 0.0
+    burnup_at_max_assembly_peaking = 0.0
 
   end subroutine
 
@@ -96,6 +103,7 @@ contains
       end do
     end do
   end subroutine make_peaking_map
+
   !=============================================================================
   !> @brief Deallocate state
   !=============================================================================
