@@ -33,9 +33,9 @@ PYTHON   = yes
 F90 = gfortran
 ifeq ($(COMPILER),gnu)
   F90 = gfortran
-  F90FLAGS = -fbacktrace -ffree-line-length-none -fPIC
-  LDFLAGS = 
-  LIB = 
+  F90FLAGS = -cpp -fbacktrace -ffree-line-length-none -fPIC -I/home/robertsj/opt/papi/include/ 
+  LDFLAGS = -L/home/robertsj/opt/papi/lib/
+  LIB = #-lpapi
  
   # Debugging
   ifeq ($(DEBUG),yes)
@@ -52,7 +52,7 @@ ifeq ($(COMPILER),gnu)
 
   # Optimization
   ifeq ($(OPTIMIZE),yes)
-    F90FLAGS += -O3
+    F90FLAGS += -O3 -funroll-loops -ffinite-math-only -funsafe-math-optimizations -fexpensive-optimizations
   endif
 endif
 

@@ -125,7 +125,7 @@ contains
     assembly_peaking = s / mean_s
     max_assembly_peaking = maxval(assembly_peaking)
 
-    if (verbose .eq. 1) then
+    if (verbose .ge. 2) then
       print *, "------------------------------"
       print '(a, i10)',   " iterations = ", j
       print '(a, f10.6)', "       keff = ", k
@@ -146,7 +146,10 @@ contains
     double precision :: cycle_max_assembly_peaking = 0.0_8
     double precision :: burnup = 0.0_8, burnup_step = 0.0_8
     double precision :: full_power_days = 0.0_8
+    double precision :: power_per_mass = 0.0_8
+    double precision :: K2=0.0_8, K1=0.0_8, burnup2=0.0, burnup1=0.0
 
+    ! just get the power distribution and escape if not burning
     if (number_burnup_steps == 0) then
       call solve()
       return
@@ -156,6 +159,9 @@ contains
     ! of the power over N-1 + 0.25 assemblies.
     average_assembly_power = 0.25_8 * reactor_power / &
                              (dble(number_assemblies)-0.75)
+
+    ! total core power divided by the total fuel mass
+    power_per_mass = reactor_power / (1.0 + 4.0 * (number_assemblies-1))
 
     ! DEBUG checks
     if (number_assemblies > number_materials) then
@@ -172,12 +178,13 @@ contains
     do i = 1, number_burnup_steps
 
       burnup_step = burnup_steps(i)
+      burnup2 = burnup1
+      burnup1 = burnup
+      k2 = k1
+      k1 = keff
 
       ! Compute the initial power distribution
       call solve()
-
-      print '(a, i3, 6f10.4)', " +++ ", i-1, burnup, full_power_days, &
-            cycle_max_assembly_peaking, max_assembly_peaking, keff
 
       ! Update the assembly burnups
       call update_assembly_burnup(burnup_step)
@@ -186,9 +193,14 @@ contains
       call compute_flare_parameters()
 
       ! Compute new core burnup (GWd) and full power days
-      burnup = burnup + &
-               burnup_step*reactor_power/(number_assemblies*assembly_mass)
+      burnup  = burnup + burnup_step * power_per_mass
       full_power_days = full_power_days + burnup_step
+
+      if (verbose .ge. 1) then
+        print '(a, i3, 7f10.4)', " +++ ", i-1, burnup, full_power_days, &
+              cycle_max_assembly_peaking, max_assembly_peaking, keff,   &
+              estimate_cycle_length(k2, k1, keff, burnup2, burnup1, burnup)
+      end if
 
       ! Record the new maximum peaking for the cycle and the burnup it occurs
       if (max_assembly_peaking > cycle_max_assembly_peaking) then
@@ -196,17 +208,22 @@ contains
         burnup_at_max_assembly_peaking = burnup
       end if
 
-      !print '(a, i3, 5f9.3)', " +++ ", i, burnup, full_power_days, cycle_max_assembly_peaking, max_assembly_peaking, keff
-
     end do
 
     ! Solve for the conditions at the end-of-cycle
     call solve()
-    print '(a, i3, 6f10.4)', " +++ ", i-1, burnup, full_power_days, &
-            cycle_max_assembly_peaking, max_assembly_peaking, keff
+    if (verbose .eq. 1) then
+      print '(a, i3, 7f10.4)', " +++ ", number_burnup_steps, burnup, &
+            full_power_days, cycle_max_assembly_peaking,          &
+            max_assembly_peaking, keff, &
+            estimate_cycle_length(k2, k1, keff, burnup2, burnup1, burnup)
+    end if
 
   end subroutine burn
 
+  !============================================================================!
+  !> @brief Update the burnup for each assembly
+  !============================================================================!
   subroutine update_assembly_burnup(step)
     double precision, intent(in) :: step
     integer :: i
@@ -215,6 +232,16 @@ contains
                       assembly_peaking(i) * average_assembly_power * step
     end do
   end subroutine update_assembly_burnup
+
+  !============================================================================!
+  !> @brief Estimate the cycle length
+  !============================================================================!
+  double precision function estimate_cycle_length(K2, K1, K0, B2, B1, B0)
+    double precision, intent(in) :: K2, K1, K0, B2, B1, B0
+    !estimate_cycle_length = (B1*(K2-1.0)-B2*(K1-1.0))/(K2-K1)
+    estimate_cycle_length = B0 - (K0-1.0) * (B0-B1)/(K0-K1)
+  end function estimate_cycle_length
+
 
   !============================================================================!
   !> @brief Compute the L2 norm of an array of values

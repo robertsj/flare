@@ -10,7 +10,6 @@
 !>        Progress in Nuclear Energy, 7, pp 127-149 (1981)
 !==============================================================================!
 program flare
-
   use material_data
   use geometry
   use coefficients
@@ -20,9 +19,15 @@ program flare
 
   implicit none
 
+!#include "f90papi.h"
+
   ! temporary variables for reading in
   character(80)  :: inputfile
   integer :: io, uinp = 5, i, j
+
+!  INTEGER :: check
+!  REAL*4 :: real_time, proc_time, mflops
+!  INTEGER*8 :: flpins
 
   namelist /material_options/ number_materials, material_source
   namelist /geometry_options/ number_assemblies, stencil_dimension,  delta
@@ -30,10 +35,12 @@ program flare
                               ktol, stol, number_burnup_steps, reactor_power
   namelist /model_options/    mixing_factor, alpha1, alpha2
 
-  print *, "=========================="
-  print *, "= a FLARE implementation ="
-  print *, "=== for 2-d neutronics ==="
-  print *, "=========================="
+  if (verbose == 1) then
+    print *, "=========================="
+    print *, "= a FLARE implementation ="
+    print *, "=== for 2-d neutronics ==="
+    print *, "=========================="
+  end if
 
   !============================================================================!
   ! INPUT
@@ -115,15 +122,33 @@ program flare
   ! SOLVE
   !============================================================================!
 
+!      i = 2
+!      call PAPIf_num_counters(j)
+!      if (i .GT. j) then
+!        stop "Not enough hardware counters!"
+!      end if
+!      call PAPIf_flops( real_time, proc_time, flpins, mflops, check )
+!      if ( check .LT. PAPI_OK ) then
+!       print *, 'Error starting PAPI ', check, PAPI_OK
+!       stop
+!      end if
+
   do i = 1, 1
+    !B(:) = 0.0
     call burn()
   end do
+
+!      call PAPIf_flops( real_time, proc_time, flpins, mflops, check )
+!      print *, 'Real_time: ', real_time, ' Proc_time: ', proc_time, &
+!               ' Total flpins: ', flpins, ' MFLOPS: ', mflops
 
   !============================================================================!
   ! POST PROCESS, etc.
   !============================================================================!
 
+  !if (verbose == 1) then
   call print_state()
   call print_peaking()
+  !end if
 
 end program flare
