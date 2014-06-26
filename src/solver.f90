@@ -2,7 +2,7 @@
 ! MODULE: solve
 !
 !> @author Jeremy Roberts
-!> @brief Solver
+!> @brief  Provides an implementation of the FLARE model with burnup
 !==============================================================================!
 module solver
 
@@ -26,16 +26,18 @@ module solver
 
   !> Reactor power (thermal) in GW
   double precision :: reactor_power = 0.0_8
-  !> Average assembly power
-  double precision :: average_assembly_power
+  !> Assembly HM mass (MTU), from WH PWR book for 4-loop plant with "OFA" fuel
+  double precision :: assembly_mass = 0.483 !0.423_8
+  !> Burnup option (0 = user steps, 1 = automated cycle length calculation)
+  integer :: burnup_option = 0
   !> Number of burnup steps
   integer :: number_burnup_steps = 0
   !> Burnup steps (full power days)
   double precision, allocatable, dimension(:) :: burnup_steps
 
-  !> Assembly heavy metal mass (MTU), a single value applied to all assemblies
-  !> taken from the Westinghouse PWR book for a 4-loop plant with "OFA" fuel
-  double precision :: assembly_mass = 0.423_8
+  double precision, private :: average_assembly_power
+  double precision, private :: power_per_mass
+  double precision, private :: mappf_cycle
 
 contains
 
@@ -105,11 +107,11 @@ contains
       k_den = 0.0
       do i = 1, number_assemblies
         k_num = k_num + s(i)*wleak(i)
-        k_den = k_den + s(i)/kinf(pattern(i))
+        k_den = k_den + s(i)/KINF(pattern(i))
       end do
       k = (sum(s) - k_num) / k_den
 
-      ! Update errors.  Check only density, as k always converges faster.
+      ! Update errors and check for convergence
       kerr = abs(k - k_o)
       serr = norm(s - s_oo) 
       if  (kerr < ktol .and. serr < stol) then
@@ -123,7 +125,7 @@ contains
     mean_s = (0.25*s(1) + sum(s(2:number_assemblies))) / &
              (0.25 + dble(number_assemblies-1))
     assembly_peaking = s / mean_s
-    max_assembly_peaking = maxval(assembly_peaking)
+    mappf = maxval(assembly_peaking)
 
     if (verbose .ge. 2) then
       print *, "------------------------------"
@@ -143,15 +145,16 @@ contains
     implicit none
 
     integer :: i
-    double precision :: cycle_max_assembly_peaking = 0.0_8
-    double precision :: burnup = 0.0_8, burnup_step = 0.0_8
-    double precision :: full_power_days = 0.0_8
-    double precision :: power_per_mass = 0.0_8
-    double precision :: K2=0.0_8, K1=0.0_8, burnup2=0.0, burnup1=0.0
+    double precision :: burnup_step, fpd, burnup, burnup1, keff1
+    fpd = 0.0
+    burnup = 0.0
+    burnup1 = 0.0
+    keff1 = 0.0
+
+    call solve()
 
     ! just get the power distribution and escape if not burning
     if (number_burnup_steps == 0) then
-      call solve()
       return
     end if
 
@@ -161,7 +164,7 @@ contains
                              (dble(number_assemblies)-0.75)
 
     ! total core power divided by the total fuel mass
-    power_per_mass = reactor_power / (1.0 + 4.0 * (number_assemblies-1))
+    power_per_mass = reactor_power / (1.0 + 4.0 * (number_assemblies-1)) / assembly_mass
 
     ! DEBUG checks
     if (number_assemblies > number_materials) then
@@ -175,49 +178,61 @@ contains
       end if
     end do
 
+    call print_burnup_header()
+    call print_burnup(0, burnup, fpd, mappf, mappf, keff, cycle_length)
+
     do i = 1, number_burnup_steps
 
+      ! select the burnup step
       burnup_step = burnup_steps(i)
-      burnup2 = burnup1
-      burnup1 = burnup
-      k2 = k1
-      k1 = keff
+      if (burnup_option == 1 .and. i > 2) then
+        burnup_step = critical_step(keff, keff1, burnup, burnup1)
+        ! estimated cycle length
+        cycle_length = burnup_step * power_per_mass + burnup
+        if (burnup_step > burnup_steps(i)) then
+          burnup_step = burnup_steps(i)
+        end if
+      end if
 
-      ! Compute the initial power distribution
-      call solve()
-
-      ! Update the assembly burnups
       call update_assembly_burnup(burnup_step)
-
-      ! Update the material data
       call compute_flare_parameters()
 
-      ! Compute new core burnup (GWd) and full power days
+      ! record old values and update new ones
+      burnup1 = burnup
+      keff1   = keff
       burnup  = burnup + burnup_step * power_per_mass
-      full_power_days = full_power_days + burnup_step
+      fpd     = fpd + burnup_step
+      call solve()
 
-      if (verbose .ge. 1) then
-        print '(a, i3, 7f10.4)', " +++ ", i-1, burnup, full_power_days, &
-              cycle_max_assembly_peaking, max_assembly_peaking, keff,   &
-              estimate_cycle_length(k2, k1, keff, burnup2, burnup1, burnup)
+      if (mappf > mappf_cycle) then
+        mappf_cycle = mappf
+        mappf_bu    = burnup
       end if
 
-      ! Record the new maximum peaking for the cycle and the burnup it occurs
-      if (max_assembly_peaking > cycle_max_assembly_peaking) then
-        cycle_max_assembly_peaking = max_assembly_peaking
-        burnup_at_max_assembly_peaking = burnup
-      end if
+      if (burnup_option==1 .and. (keff<=1.0 .or. abs(burnup-burnup1)<=ktol)) exit
+
+      call print_burnup(i, burnup, fpd, mappf_cycle, mappf, keff, cycle_length)
 
     end do
 
-    ! Solve for the conditions at the end-of-cycle
-    call solve()
-    if (verbose .eq. 1) then
-      print '(a, i3, 7f10.4)', " +++ ", number_burnup_steps, burnup, &
-            full_power_days, cycle_max_assembly_peaking,          &
-            max_assembly_peaking, keff, &
-            estimate_cycle_length(k2, k1, keff, burnup2, burnup1, burnup)
+    if (burnup_option == 1) then
+      cycle_length = burnup + &
+                     critical_step(keff,keff1,burnup,burnup1)*power_per_mass
+    else
+      cycle_length = burnup
     end if
+
+    ! Solve for the conditions at the end-of-cycle
+    if (burnup_option == 0 .or. (burnup_option == 1 .and. keff >= 1.0)) then
+      call solve()
+    end if
+
+    if (verbose > 0) then
+      call print_burnup(i, burnup, fpd, mappf_cycle, mappf, keff, cycle_length)
+      print *, "   -------------------------------------------------------------------"
+    end if
+
+    print *, " p p m = ", power_per_mass, (1.0 + 4.0 * (number_assemblies-1))
 
   end subroutine burn
 
@@ -234,14 +249,45 @@ contains
   end subroutine update_assembly_burnup
 
   !============================================================================!
-  !> @brief Estimate the cycle length
+  !> @brief Estimate step to reach critical based on linear reactivity
   !============================================================================!
-  double precision function estimate_cycle_length(K2, K1, K0, B2, B1, B0)
-    double precision, intent(in) :: K2, K1, K0, B2, B1, B0
-    !estimate_cycle_length = (B1*(K2-1.0)-B2*(K1-1.0))/(K2-K1)
-    estimate_cycle_length = B0 - (K0-1.0) * (B0-B1)/(K0-K1)
-  end function estimate_cycle_length
+  double precision function critical_step(k0, k1, b0, b1)
+    double precision, intent(in) :: k0, k1, b0, b1
+    double precision :: p0, p1
+    p0 = (k0-1.0)/k0
+    p1 = (k1-1.0)/k1
+    critical_step = (-(1.*(p1*b0-1.*b1*p0))/(p0-1.*p1)-b0) / power_per_mass
+  end function critical_step
 
+  !============================================================================!
+  subroutine print_burnup_header()
+    if (verbose > 0) then
+
+      if (burnup_option == 0) then
+        print *, " *** BURNUP CALCULATION WITH USER-SPECIFED BURNUP STEPS ***"
+      elseif (burnup_option == 1) then
+        print *, " *** BURNUP CALCULATION FOR DETERMINATION OF CYCLE LENGTH ***"
+      end if
+      print *, ""
+      print *, &
+        "   -------------------------------------------------------------------"
+      print *, &
+        "    STEP   BURNUP     FPD     MAX APPF  MAX APPF    KEFF   APPX.CYC.L "
+      print *, &
+        "          [GWd/MTU]  [day]     [cycle]   [step]            [GWd/MTU] "
+      print *, &
+        "   -------------------------------------------------------------------"
+    end if
+  end subroutine print_burnup_header
+
+  !============================================================================!
+  subroutine print_burnup(i, bu, fpd, mappf_c, mppff_s, k, cl)
+     integer, intent(in) :: i
+     double precision, intent(in) :: bu, fpd, mappf_c, mppff_s, k, cl
+     if (verbose > 0) then
+       print '(a, i3, 7f10.4)', "     ", i, bu, fpd, mappf_c, mppff_s, k, cl
+     end if
+  end subroutine print_burnup
 
   !============================================================================!
   !> @brief Compute the L2 norm of an array of values

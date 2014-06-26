@@ -15,7 +15,7 @@ program flare
   use coefficients
   use state
   use solver
-  !use burnup, only: power, number_steps, burnup_steps, burn
+  use utilities
 
   implicit none
 
@@ -23,7 +23,7 @@ program flare
 
   ! temporary variables for reading in
   character(80)  :: inputfile
-  integer :: io, uinp = 5, i, j
+  integer :: io, uinp = 5, i
 
 !  INTEGER :: check
 !  REAL*4 :: real_time, proc_time, mflops
@@ -31,16 +31,11 @@ program flare
 
   namelist /material_options/ number_materials, material_source
   namelist /geometry_options/ number_assemblies, stencil_dimension,  delta
-  namelist /solver_options/   verbose, max_inners, max_outers, &
-                              ktol, stol, number_burnup_steps, reactor_power
+  namelist /solver_options/   verbose, max_inners, max_outers, ktol, stol, &
+                              number_burnup_steps, burnup_option, &
+                              reactor_power, assembly_mass
   namelist /model_options/    mixing_factor, alpha1, alpha2
 
-  if (verbose == 1) then
-    print *, "=========================="
-    print *, "= a FLARE implementation ="
-    print *, "=== for 2-d neutronics ==="
-    print *, "=========================="
-  end if
 
   !============================================================================!
   ! INPUT
@@ -60,6 +55,15 @@ program flare
   read (uinp, nml=geometry_options)
   read (uinp, nml=solver_options)
   read (uinp, nml=model_options)
+
+  if (verbose > 0) then
+    print *, ""
+    print *, "=========================="
+    print *, "= a FLARE implementation ="
+    print *, "=== for 2-d neutronics ==="
+    print *, "=========================="
+    print *, ""
+  end if
 
   ! Initialize geometry and read in stencil
   call initialize_geometry()
@@ -117,6 +121,7 @@ program flare
   call initialize_state()
   call build_geometry()
   call initialize_coefficients()
+  call initialize_solver()
 
   !============================================================================!
   ! SOLVE
@@ -132,7 +137,6 @@ program flare
 !       print *, 'Error starting PAPI ', check, PAPI_OK
 !       stop
 !      end if
-
   do i = 1, 1
     !B(:) = 0.0
     call burn()
@@ -148,7 +152,12 @@ program flare
 
   !if (verbose == 1) then
   call print_state()
-  call print_peaking()
+
+  call print_map(assembly_peaking, "ASSEMBLY_PEAKING", GEOMETRY_INDEXED)
+  call print_map(B, "ASSEMBLY_BURNUP", MATERIAL_INDEXED)
+  !call print_map(BP, "ASSEMBLY_BP", MATERIAL_INDEXED)
   !end if
+
+  call deallocate_geometry()
 
 end program flare

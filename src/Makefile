@@ -15,15 +15,16 @@ nuclear_data_IFBA.o     \
 nuclear_data_WABA.o     \
 nuclear_data_GAD.o      \
 state.o                 \
-solver.o       
+solver.o                \
+utilities.o
 
 #===============================================================================
 # User Options
 #===============================================================================
 
 COMPILER = gnu
-DEBUG    = no
-OPTIMIZE = yes
+DEBUG    = yes
+OPTIMIZE = no
 PROFILE  = no
 PYTHON   = yes
 
@@ -95,7 +96,10 @@ neat:
 	@rm -f *.o *.mod
 
 pyflare:
-	f2py2.7 --opt="-O3" -c -m pyflare group_data.f90 geometry.f90 state.f90 coefficients.f90 solver.f90
+	f2py2.7 --opt="-O3" --f90flags="-ffree-line-length-none" -c -m pyflare2 \
+	     nuclear_data_NOBP.f90 nuclear_data_IFBA.f90 nuclear_data_WABA.f90 \
+	     nuclear_data_GAD.f90 nuclear_data.f90 material_data.f90 \
+	     geometry.f90 state.f90 utilities.f90 coefficients.f90 solver.f90
 
 #===============================================================================
 # Rules
@@ -119,6 +123,7 @@ flare.o: geometry.o
 flare.o: coefficients.o
 flare.o: state.o
 flare.o: solver.o
+flare.o: utilities.o
 
 solver.o: coefficients.o
 solver.o: geometry.o
@@ -134,4 +139,5 @@ nuclear_data.o: nuclear_data_IFBA.o
 nuclear_data.o: nuclear_data_WABA.o
 nuclear_data.o: nuclear_data_GAD.o
 
+utilities.o:  geometry.o
 

@@ -35,22 +35,18 @@ module geometry
 
   !> Stencil
   integer, allocatable :: stencil(:, :)
-
   !> Loading pattern
   integer, allocatable :: pattern(:)
-
   !> Neighbor list
   integer, allocatable :: neighbors(:, :)
-
   !> Number of neighbors for each bundle
   integer, allocatable :: number_neighbors(:)
-
+  !> Number of assemblies for each row
+  integer, allocatable :: number_per_row(:)
   !> Number of assemblies
   integer :: number_assemblies
-
   !> Stencil dimension
   integer :: stencil_dimension
-
   !> Size of assemblies (cm)
   double precision :: delta
 
@@ -62,8 +58,9 @@ contains
   !> This *must* be called before build_geometry.
   !============================================================================!
   subroutine initialize_geometry()
-    if (.not. allocated(stencil)) &
+    if (.not. allocated(stencil)) then
       allocate(stencil(stencil_dimension, stencil_dimension))
+    end if
     if (.not. allocated(pattern)) allocate(pattern(number_assemblies))
   end subroutine initialize_geometry
 
@@ -78,6 +75,7 @@ contains
     if (allocated(pattern)) deallocate(pattern)
     if (allocated(neighbors)) deallocate(neighbors)
     if (allocated(number_neighbors)) deallocate(number_neighbors)
+    if (allocated(number_per_row)) deallocate(number_per_row)
   end subroutine deallocate_geometry
 
   !============================================================================!
@@ -91,8 +89,9 @@ contains
   !============================================================================!
   subroutine build_geometry()
     integer :: i, j, k, n
-    integer :: number_per_row(stencil_dimension) ! number bundles per row
     integer :: number_per_col(stencil_dimension) ! number bundles per row
+
+    allocate(number_per_row(stencil_dimension))
 
     ! go through the stencil once and record dimensions
     n = size(stencil, 1)
@@ -174,6 +173,9 @@ contains
       end do
       number_neighbors(i) = k
     end do
+
+    ! Add back to the first element for use in printing
+    number_per_row(1) = number_per_row(1) + 1
 
   end subroutine build_geometry
 

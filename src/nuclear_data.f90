@@ -34,7 +34,7 @@ integer, parameter :: GAD = 3
  
 ! Burnup cutoffs for parts of each fit
 double precision, parameter :: XE_CUTOFF   = 0.1
-double precision, parameter :: IFBA_CUTOFF = 30
+double precision, parameter :: IFBA_CUTOFF = 30.0
 double precision, parameter :: GAD_CUTOFF  = 15.0
 double precision, parameter :: WABA_CUTOFF = 22.5
  

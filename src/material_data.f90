@@ -100,6 +100,7 @@ contains
       do i = 1, number_materials
         call set_flare_data(B(i), E(i), BP(i), KINF(i), M2(i), KAPPA(i))
       end do
+      KINF = KINF * 0.99_8
     else
       do i = 1, number_materials
         KINF(i) = (F1(i) + F2(i) * S12(i)/A2(i)) / (A1(i)+S12(i))
