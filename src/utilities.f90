@@ -51,6 +51,7 @@ contains
     end do
 
     k = 0
+    print *, ""
     print *, "*** ", s, " *** "
     print *, ""
     do i = 1, stencil_dimension
@@ -93,6 +94,7 @@ contains
     end do
 
     k = 0
+    print *, ""
     print *, "*** ", s, " *** "
     print *, ""
     do i = 1, stencil_dimension

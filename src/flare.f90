@@ -1,8 +1,7 @@
 !==============================================================================!
 ! PROGRAM: flare
 !
-!> @author Jeremy Roberts
-!>
+!> @author Jeremy Roberts (jaroberts@ksu.edu)
 !> @brief A simple 2-d nodal code
 !>
 !> Most of the equations used here follow 
@@ -10,6 +9,7 @@
 !>        Progress in Nuclear Energy, 7, pp 127-149 (1981)
 !==============================================================================!
 program flare
+
   use material_data
   use geometry
   use coefficients
@@ -19,15 +19,18 @@ program flare
 
   implicit none
 
-!#include "f90papi.h"
+#ifdef PAPI
+#include "f90papi.h"
+#endif
 
   ! temporary variables for reading in
   character(80)  :: inputfile
   integer :: io, uinp = 5, i
 
-!  INTEGER :: check
-!  REAL*4 :: real_time, proc_time, mflops
-!  INTEGER*8 :: flpins
+  ! variables for PAPA (optional)
+  integer :: check
+  real :: real_time, proc_time, mflops
+  integer*8 :: flpins
 
   namelist /material_options/ number_materials, material_source
   namelist /geometry_options/ number_assemblies, stencil_dimension,  delta
@@ -41,7 +44,7 @@ program flare
   ! INPUT
   !============================================================================!
 
-  if ( COMMAND_ARGUMENT_COUNT() .lt. 1 ) then
+  if (command_argument_count() < 1) then
     stop "*** ERROR: user input file not specified ***"
   else
     call get_command_argument(1, inputfile);
@@ -87,7 +90,6 @@ program flare
     do i = 1, number_materials
       read (uinp,'(a)')
       read (uinp, *) B(i), E(i), BP(i)
-      !print *, "id=",i, "burnup=", B(i), "enrichment=", E(i), "bp=", BP(i)
     end do
   else
     ! otherwise, read two-group data directly
@@ -127,32 +129,29 @@ program flare
   ! SOLVE
   !============================================================================!
 
-!      i = 2
-!      call PAPIf_num_counters(j)
-!      if (i .GT. j) then
-!        stop "Not enough hardware counters!"
-!      end if
-!      call PAPIf_flops( real_time, proc_time, flpins, mflops, check )
-!      if ( check .LT. PAPI_OK ) then
-!       print *, 'Error starting PAPI ', check, PAPI_OK
-!       stop
-!      end if
-  do i = 1, 1
-    !B(:) = 0.0
+#ifdef PAPI
+  i = 2
+  call PAPIf_num_counters(j)
+  if (i > j) stop "Not enough hardware counters!"
+  call PAPIf_flops(real_time, proc_time, flpins, mflops, check)
+  if (check < PAPI_OK) stop "Error starting PAPI ", check, PAPI_OK
+#endif
+
+  do i = 1, 10000
     call burn()
   end do
 
-!      call PAPIf_flops( real_time, proc_time, flpins, mflops, check )
-!      print *, 'Real_time: ', real_time, ' Proc_time: ', proc_time, &
-!               ' Total flpins: ', flpins, ' MFLOPS: ', mflops
+#ifdef PAPI
+  call PAPIf_flops( real_time, proc_time, flpins, mflops, check )
+  print *, 'Real_time: ', real_time, ' Proc_time: ', proc_time, &
+           ' Total flpins: ', flpins, ' MFLOPS: ', mflops
+#endif
 
   !============================================================================!
   ! POST PROCESS, etc.
   !============================================================================!
 
-  !if (verbose == 1) then
   call print_state()
-
   call print_map(assembly_peaking, "ASSEMBLY_PEAKING", GEOMETRY_INDEXED)
   call print_map(B, "ASSEMBLY_BURNUP", MATERIAL_INDEXED)
   !call print_map(BP, "ASSEMBLY_BP", MATERIAL_INDEXED)

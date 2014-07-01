@@ -51,11 +51,13 @@ contains
   !> @brief Print values.
   !=============================================================================
   subroutine print_state()
+    print *, ""
     print *, "------------------------------ "
     print '(a, f10.6)', "            keff = ", keff
     print '(a, f10.6)', " maximum peaking = ", mappf
     print '(a, f10.6)', "    cycle length = ", cycle_length
     print *, "------------------------------ "
+    print *, ""
   end subroutine print_state
 
   !=============================================================================

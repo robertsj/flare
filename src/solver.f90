@@ -87,6 +87,8 @@ contains
          
       ! Inner iteration
       INNER: do i = 1, max_inners
+
+        !$OMP DO
         s_o = s
         do p = 1, number_assemblies
           s(p) = wpp(p) * s_o(p)
@@ -97,7 +99,9 @@ contains
             end if
           end do
           s(p) = s(p) * KINF(pattern(p)) / k
-        end do      
+        end do
+        !$OMP END DO
+
       end do INNER
       s = s / norm(s)
 
@@ -151,6 +155,8 @@ contains
     burnup1 = 0.0
     keff1 = 0.0
 
+    !$OMP PARALLEL
+
     call solve()
 
     ! just get the power distribution and escape if not burning
@@ -164,7 +170,8 @@ contains
                              (dble(number_assemblies)-0.75)
 
     ! total core power divided by the total fuel mass
-    power_per_mass = reactor_power / (1.0 + 4.0 * (number_assemblies-1)) / assembly_mass
+    power_per_mass = reactor_power / &
+                     (1.0 + 4.0 * (number_assemblies-1)) / assembly_mass
 
     ! DEBUG checks
     if (number_assemblies > number_materials) then
@@ -181,7 +188,7 @@ contains
     call print_burnup_header()
     call print_burnup(0, burnup, fpd, mappf, mappf, keff, cycle_length)
 
-    do i = 1, number_burnup_steps
+    BURNITS: do i = 1, number_burnup_steps
 
       ! select the burnup step
       burnup_step = burnup_steps(i)
@@ -189,7 +196,7 @@ contains
         burnup_step = critical_step(keff, keff1, burnup, burnup1)
         ! estimated cycle length
         cycle_length = burnup_step * power_per_mass + burnup
-        if (burnup_step > burnup_steps(i)) then
+        if (burnup_step > burnup_steps(i) .or. burnup_step == 0.0) then
           burnup_step = burnup_steps(i)
         end if
       end if
@@ -209,30 +216,24 @@ contains
         mappf_bu    = burnup
       end if
 
-      if (burnup_option==1 .and. (keff<=1.0 .or. abs(burnup-burnup1)<=ktol)) exit
-
       call print_burnup(i, burnup, fpd, mappf_cycle, mappf, keff, cycle_length)
 
-    end do
+      if (burnup_option == 1 .and. &
+         (keff <= 1.0 .or. abs(burnup-burnup1) <= ktol)) exit
+
+    end do BURNITS
+
+    !$OMP END PARALLEL
 
     if (burnup_option == 1) then
+      ! compute final cl estimate based on latest info
       cycle_length = burnup + &
                      critical_step(keff,keff1,burnup,burnup1)*power_per_mass
     else
       cycle_length = burnup
     end if
 
-    ! Solve for the conditions at the end-of-cycle
-    if (burnup_option == 0 .or. (burnup_option == 1 .and. keff >= 1.0)) then
-      call solve()
-    end if
 
-    if (verbose > 0) then
-      call print_burnup(i, burnup, fpd, mappf_cycle, mappf, keff, cycle_length)
-      print *, "   -------------------------------------------------------------------"
-    end if
-
-    print *, " p p m = ", power_per_mass, (1.0 + 4.0 * (number_assemblies-1))
 
   end subroutine burn
 
@@ -257,6 +258,7 @@ contains
     p0 = (k0-1.0)/k0
     p1 = (k1-1.0)/k1
     critical_step = (-(1.*(p1*b0-1.*b1*p0))/(p0-1.*p1)-b0) / power_per_mass
+    if (critical_step < 0.0) critical_step = 0.0
   end function critical_step
 
   !============================================================================!
@@ -286,6 +288,10 @@ contains
      double precision, intent(in) :: bu, fpd, mappf_c, mppff_s, k, cl
      if (verbose > 0) then
        print '(a, i3, 7f10.4)', "     ", i, bu, fpd, mappf_c, mppff_s, k, cl
+       if (i == number_burnup_steps) then
+         print *, "   -----------------------------------&
+           &--------------------------------"
+       end if
      end if
   end subroutine print_burnup
 

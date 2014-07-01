@@ -23,20 +23,23 @@ utilities.o
 #===============================================================================
 
 COMPILER = gnu
-DEBUG    = yes
-OPTIMIZE = no
+DEBUG    = no
+OPTIMIZE = yes
 PROFILE  = no
 PYTHON   = yes
+PAPI     = no
+OPENMP   = no
 
 #===============================================================================
 # GNU Fortran compiler options
 #===============================================================================
 F90 = gfortran
 ifeq ($(COMPILER),gnu)
+
   F90 = gfortran
-  F90FLAGS = -cpp -fbacktrace -ffree-line-length-none -fPIC -I/home/robertsj/opt/papi/include/ 
+  F90FLAGS = -cpp -fbacktrace -ffree-line-length-none -fPIC 
   LDFLAGS = -L/home/robertsj/opt/papi/lib/
-  LIB = #-lpapi
+  LIB = 
  
   # Debugging
   ifeq ($(DEBUG),yes)
@@ -53,11 +56,28 @@ ifeq ($(COMPILER),gnu)
 
   # Optimization
   ifeq ($(OPTIMIZE),yes)
-    F90FLAGS += -O3 -funroll-loops -ffinite-math-only -funsafe-math-optimizations -fexpensive-optimizations
+    F90FLAGS += -O3
   endif
+  
+  # PAPI 
+  ifeq ($(PAPI),yes)
+    F90FLAGS += -I$(PAPI_DIR)/include -DPAPI
+    LDFLAGS  += -L$(PAPI_DIR)/lib/
+    LIB      += -lpapi
+  endif
+  
+  # OPENMP 
+  ifeq ($(PAPI),yes)
+    F90FLAGS += -fopenmp  -DOPENMP
+  endif 
+  
 endif
 
+#===============================================================================
+# Intel Fortran compiler options
+#===============================================================================
 ifeq ($(COMPILER),ifort)
+
   F90 = ifort
   F90FLAGS := 
   LDFLAGS = 
@@ -80,6 +100,7 @@ ifeq ($(COMPILER),ifort)
   ifeq ($(OPTIMIZE),yes)
     F90FLAGS += -fast
   endif
+  
 endif
 
 #===============================================================================
