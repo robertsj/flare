@@ -17,8 +17,23 @@ module state
   !> Assembly power peaking factors
   double precision, allocatable :: assembly_peaking(:)
 
+  !> Assembly moderator temperature
+  double precision, allocatable :: assembly_temperature(:)
+
+  !> Assembly fuel temperature 
+  double precision, allocatable :: fuel_temperature(:)
+
+
   !> Power peaking map
   double precision, allocatable :: peaking_map(:, :)
+
+!> Power  map
+double precision, allocatable :: power_map(:, :)
+
+!> Temperature  map
+double precision, allocatable :: temperature_map(:, :)
+
+ 
 
   !> Maximum assembly power peaking factor
   double precision :: mappf
@@ -40,6 +55,18 @@ contains
     
     allocate(assembly_peaking(number_assemblies),                &
              peaking_map(stencil_dimension, stencil_dimension))
+
+    if (allocated(assembly_temperature)) call deallocate_state()
+ 
+   allocate(assembly_temperature(number_assemblies),                &
+            power_map(stencil_dimension, stencil_dimension))
+
+    if (allocated(fuel_temperature)) call deallocate_state()
+
+    allocate(fuel_temperature(number_assemblies),                &
+            temperature_map(stencil_dimension, stencil_dimension))
+
+
     keff = 1.0
     mappf = 0.0
     mappf_bu = 0.0
@@ -77,6 +104,8 @@ contains
   !=============================================================================
   subroutine deallocate_state()
     deallocate(assembly_peaking, peaking_map)
+    deallocate(assembly_temperature, power_map)
+    deallocate(fuel_temperature, temperature_map)
   end subroutine
 
 end module state

@@ -10,6 +10,12 @@ number_assemblies=49
 /
 &solver_options
 reactor_power=3.411
+reactor_height=1
+extra_p=0.1
+Tin=270
+mdCp=0.1
+Res_g=0.023468028Res_h=0.012718504Res_c=0.001384238Res_f=0.014744043
+number_pins=289
 number_burnup_steps=20
 burnup_option=1
 verbose=1

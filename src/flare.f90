@@ -33,7 +33,9 @@ program flare
   namelist /geometry_options/ number_assemblies, stencil_dimension,  delta
   namelist /solver_options/   verbose, max_inners, max_outers, ktol, stol, &
                               number_burnup_steps, burnup_option, &
-                              reactor_power, assembly_mass
+                              reactor_power, reactor_height, assembly_mass, &
+                              extra_p, Tin, mdCp, Res_g, Res_c, Res_h, &
+                              Res_f, number_pins
   namelist /model_options/    mixing_factor, alpha1, alpha2
 
 
@@ -155,6 +157,8 @@ program flare
 
   call print_map(assembly_peaking, "ASSEMBLY_PEAKING", GEOMETRY_INDEXED)
   call print_map(B, "ASSEMBLY_BURNUP", MATERIAL_INDEXED)
+  call print_map(assembly_temperature, "MODERATOR_TEMPERATURE", GEOMETRY_INDEXED)
+  call print_map(fuel_temperature, "FUEL_TEMPERATURE", GEOMETRY_INDEXED)
   !call print_map(BP, "ASSEMBLY_BP", MATERIAL_INDEXED)
   !end if
 

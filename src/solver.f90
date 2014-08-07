@@ -26,6 +26,25 @@ module solver
 
   !> Reactor power (thermal) in GW
   double precision :: reactor_power = 0.0_8
+  !> Reactor height in m
+  double precision :: reactor_height = 1.0_8
+  !> Extrapolation distance in m
+  double precision :: extra_p = 0.1_8
+  !> Reactor inlet moderator temperature in C
+  double precision :: Tin = 270.0_8
+  !> Reactor coolant mass flow * Cp
+  double precision :: mdCp = 0.1_8
+  !> Resistance fuel-clad gap
+  double precision :: Res_g = 0.01_8
+  !> Resistance clad
+  double precision :: Res_c = 0.01_8
+  !> Resistance coolant
+  double precision :: Res_h = 0.01_8
+  !> Resistance fuel-clad gap
+  double precision :: Res_f = 0.01_8
+  !> Number of pins in assembly
+  double precision :: number_pins = 289_8
+
   !> Assembly HM mass (MTU), from WH PWR book for 4-loop plant with "OFA" fuel
   double precision :: assembly_mass = 0.483 !0.423_8
   !> Burnup option (0 = user steps, 1 = automated cycle length calculation)
@@ -125,6 +144,13 @@ contains
     mean_s = (0.25*s(1) + sum(s(2:number_assemblies))) / &
              (0.25 + dble(number_assemblies-1))
     assembly_peaking = s / mean_s
+    assembly_temperature = Tin + assembly_peaking * &
+                           reactor_power * reactor_height * &
+                           SIN(3.14_8 / 2) / mdCp
+    fuel_temperature = assembly_temperature + assembly_peaking * &
+                       reactor_power * 1000000.0_8 * &
+                       (0.25_8 / number_assemblies ) * &
+                       (Res_c + Res_g + Res_h + Res_f) / number_pins
     mappf = maxval(assembly_peaking)
 
     if (verbose .ge. 2) then
