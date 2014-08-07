@@ -1,0 +1,151 @@
+SMALL PWR BENCHMARK OF YAMAMOTO
+&material_options
+material_source=1
+number_materials=49 
+/
+&geometry_options
+delta=21.0
+stencil_dimension=9
+number_assemblies=49 
+/
+&solver_options
+reactor_power=3.411
+number_burnup_steps=30
+burnup_option=1
+verbose=1
+max_inners=200
+max_outers=1000
+stol=0.00001
+ktol=0.00001
+/
+&model_options 
+mixing_factor=0.98850	
+alpha1=-0.13804	
+alpha2=-0.00405
+/
+\\\ Stencil. Nonzeros represent materials and zeros symmetry and reflector.
+  1  2  3  4  5  6  7  8  0 
+ -1  9 10 11 12 13 14 15  0
+ -1 16 17 18 19 20 21 22  0
+ -1 23 24 25 26 27 28 29  0
+ -1 30 31 32 33 34 35  0  0
+ -1 36 37 38 39 40 41  0  0
+ -1 42 43 44 45 46  0  0  0
+ -1 47 48 49  0  0  0  0  0
+  0  0  0  0  0  0  0  0  0
+\\\  material =  0
+    30.0  4.1  1
+\\\  material =  1
+    15.0  4.1  1
+\\\  material =  2
+    0.0  4.1  1
+\\\  material =  3
+    30.0  4.1  1
+\\\  material =  4
+    0.0  4.1  1
+\\\  material =  5
+    15.0  4.1  1
+\\\  material =  6
+    30.0  4.1  1
+\\\  material =  7
+    30.0  4.1  1
+\\\  material =  8
+    15.0  4.1  1
+\\\  material =  9
+    30.0  4.1  1
+\\\  material =  10
+    0.0  4.1  1
+\\\  material =  11
+    15.0  4.1  1
+\\\  material =  12
+    15.0  4.1  1
+\\\  material =  13
+    0.0  4.1  1
+\\\  material =  14
+    30.0  4.1  1
+\\\  material =  15
+    30.0  4.1  1
+\\\  material =  16
+    0.0  4.1  1
+\\\  material =  17
+    15.0  4.1  1
+\\\  material =  18
+    15.0  4.1  1
+\\\  material =  19
+    0.0  4.1  1
+\\\  material =  20
+    0.0  4.1  1
+\\\  material =  21
+    30.0  4.1  1
+\\\  material =  22
+    0.0  4.1  1
+\\\  material =  23
+    15.0  4.1  1
+\\\  material =  24
+    15.0  4.1  1
+\\\  material =  25
+    15.0  4.1  1
+\\\  material =  26
+    15.0  4.1  1
+\\\  material =  27
+    0.0  4.1  1
+\\\  material =  28
+    30.0  4.1  1
+\\\  material =  29
+    15.0  4.1  1
+\\\  material =  30
+    15.0  4.1  1
+\\\  material =  31
+    15.0  4.1  1
+\\\  material =  32
+    15.0  4.1  1
+\\\  material =  33
+    0.0  4.1  1
+\\\  material =  34
+    30.0  4.1  1
+\\\  material =  35
+    15.0  4.1  1
+\\\  material =  36
+    0.0  4.1  1
+\\\  material =  37
+    15.0  4.1  1
+\\\  material =  38
+    0.0  4.1  1
+\\\  material =  39
+    0.0  4.1  1
+\\\  material =  40
+    30.0  4.1  1
+\\\  material =  41
+    0.0  4.1  1
+\\\  material =  42
+    0.0  4.1  1
+\\\  material =  43
+    0.0  4.1  1
+\\\  material =  44
+    30.0  4.1  1
+\\\  material =  45
+    30.0  4.1  1
+\\\  material =  46
+    30.0  4.1  1
+\\\  material =  47
+    30.0  4.1  1
+\\\  material =  48
+    30.0  4.1  1
+\\\ burnup steps comes next (in full power days)
+    1.0 5.0 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 
+
+*** This is free space ***
+
+  1  8  2  6  1  7  1  4  0 
+  0  1  8  2  8  1  1  4  0
+  0  8  1  8  2  7  1  4  0
+  0  2  8  2  8  1  8  4  0
+  0  8  2  8  2  5  4  0  0
+  0  1  7  1  5  4  4  0  0
+  0  1  1  8  4  4  0  0  0
+  0  4  4  4  0  0  0  0  0
+  0  0  0  0  0  0  0  0  0
+
+model 1: 0.9884979114056625	-0.13803858216284481	-0.004050725958076542
+
+ 1.0000  5.0000  81.4286  157.8571  234.2857  310.7143  387.1429  463.5714  540.0000

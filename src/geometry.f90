@@ -35,55 +35,50 @@ module geometry
 
   !> Stencil
   integer, allocatable :: stencil(:, :)
-
   !> Loading pattern
   integer, allocatable :: pattern(:)
-
   !> Neighbor list
   integer, allocatable :: neighbors(:, :)
-
   !> Number of neighbors for each bundle
   integer, allocatable :: number_neighbors(:)
-
+  !> Number of assemblies for each row
+  integer, allocatable :: number_per_row(:)
   !> Number of assemblies
-  integer :: number_bundles
-
+  integer :: number_assemblies
   !> Stencil dimension
   integer :: stencil_dimension
-
   !> Size of assemblies (cm)
   double precision :: delta
 
 contains
 
-  !============================================================================
+  !============================================================================!
   !> @brief Initialize geometry.
   !>
   !> This *must* be called before build_geometry.
-  !============================================================================
+  !============================================================================!
   subroutine initialize_geometry()
-    
-    if (.not. allocated(stencil)) &
+    if (.not. allocated(stencil)) then
       allocate(stencil(stencil_dimension, stencil_dimension))
-    if (.not. allocated(pattern)) allocate(pattern(number_bundles))
-  end subroutine
+    end if
+    if (.not. allocated(pattern)) allocate(pattern(number_assemblies))
+  end subroutine initialize_geometry
 
 
-  !============================================================================
+  !============================================================================!
   !> @brief Deallocate geometry.
   !>
   !> This must be called before loading a new core configuration.
-  !============================================================================
+  !============================================================================!
   subroutine deallocate_geometry()
-    
     if (allocated(stencil)) deallocate(stencil)
     if (allocated(pattern)) deallocate(pattern)
     if (allocated(neighbors)) deallocate(neighbors)
     if (allocated(number_neighbors)) deallocate(number_neighbors)
-    
-  end subroutine
+    if (allocated(number_per_row)) deallocate(number_per_row)
+  end subroutine deallocate_geometry
 
-  !============================================================================
+  !============================================================================!
   !> @brief Build the neighbor list and related items.
   !>
   !> The stencil becomes the cardinal index map.  Neighbors are defined by
@@ -91,11 +86,12 @@ contains
   !> each of which has an index j.  This index can be used to index into
   !> pattern, the value of which defines the material index.
   !>
-  !============================================================================
+  !============================================================================!
   subroutine build_geometry()
     integer :: i, j, k, n
-    integer :: number_per_row(stencil_dimension) ! number bundles per row
     integer :: number_per_col(stencil_dimension) ! number bundles per row
+
+    allocate(number_per_row(stencil_dimension))
 
     ! go through the stencil once and record dimensions
     n = size(stencil, 1)
@@ -122,19 +118,11 @@ contains
       end do
     end do
 
-!    print *, "stencil = "
-!    do i = 1, n
-!      print *, stencil(i, :)
-!    end do
-!     
-!    print *, "pattern = "
-!    print *, pattern
-
     ! Subtract the first element, since we handle it explicitly below.
     number_per_row(1) = number_per_row(1) - 1
 
     ! My neighbors.
-    allocate(neighbors(number_bundles, 4))
+    allocate(neighbors(number_assemblies, 4))
     neighbors = -1
 
     ! Central node is always adjacent to node 2 all four times.
@@ -177,13 +165,8 @@ contains
       end do
     end do
 
-!    print *, "neighbors = "
-!    do i = 1, number_bundles
-!      print *, neighbors(i, :)
-!    end do
-
-    allocate(number_neighbors(number_bundles))
-    do i = 1, number_bundles
+    allocate(number_neighbors(number_assemblies))
+    do i = 1, number_assemblies
       k = 0
       do j = 1, 4
         if (neighbors(i, j) .gt. 0) k = k + 1
@@ -191,12 +174,15 @@ contains
       number_neighbors(i) = k
     end do
 
+    ! Add back to the first element for use in printing
+    number_per_row(1) = number_per_row(1) + 1
+
   end subroutine build_geometry
 
   !> @name Python Interface
   !> @{
 
-  !============================================================================
+  !============================================================================!
   !> @brief Set the stencil.
   !>
   !> Note, the second argument is IMPLICIT when called from Python.  That is
@@ -206,21 +192,21 @@ contains
   !> @endcode
   !> @param   s     A 2-D integer array specifying fuel and reflector regions.
   !> @param   n     Length of one dimension of the stencil array (IMPLICIT)
-  !============================================================================
+  !============================================================================!
   subroutine set_stencil(s, n)
     integer, intent(in) :: n, s(n, n)
     if (.not. allocated(stencil)) allocate(stencil(n, n))
     stencil(:, :) = s(:, :)
   end subroutine set_stencil
 
-  !============================================================================
+  !============================================================================!
   !> @brief Print the pattern using default array formatting.
-  !============================================================================
+  !============================================================================!
   subroutine print_stencil()
     print *, stencil
   end subroutine print_stencil
 
-  !============================================================================
+  !============================================================================!
   !> @brief Set the pattern.
   !>
   !> Note, the second argument is IMPLICIT when called from Python.  That is
@@ -230,16 +216,16 @@ contains
   !> @endcode
   !> @param   p     An integer array specifying assembly locations.
   !> @param   n     Length of the pattern array (IMPLICIT)
-  !============================================================================
+  !============================================================================!
   subroutine set_pattern(p, n)
     integer, intent(in) :: n, p(n)
     if (.not. allocated(pattern)) allocate(pattern(n))
     pattern(:) = p(:)
   end subroutine set_pattern
 
-  !============================================================================
+  !============================================================================!
   !> @brief Print the pattern using default array formatting.
-  !============================================================================
+  !============================================================================!
   subroutine print_pattern()
     print *, pattern
   end subroutine print_pattern
@@ -247,4 +233,3 @@ contains
   !> @}
 
 end module geometry
-
