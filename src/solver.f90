@@ -27,7 +27,7 @@ module solver
   !> Reactor power (thermal) in GW
   double precision :: reactor_power = 0.0_8
   !> Assembly HM mass (MTU), from WH PWR book for 4-loop plant with "OFA" fuel
-  double precision :: assembly_mass = 0.483 !0.423_8
+  double precision :: assembly_mass = .423 !0.483 !0.423_8
   !> Burnup option (0 = user steps, 1 = automated cycle length calculation)
   integer :: burnup_option = 0
   !> Number of burnup steps
@@ -61,16 +61,16 @@ contains
     implicit none
     ! local
     integer :: i, j, p, q, qq
-    double precision :: k,                   & ! temporary current keff
-                        k_o,                 & ! temporary past keff
-                        s(number_assemblies),   & ! fission density
-                        s_o(number_assemblies), & ! temporay density (inners)
-                        s_oo(number_assemblies),& ! temporary density (outers)
-                        k_num,               & ! numerator in keff expression
-                        k_den,               & ! denomenator in keff expression
-                        serr,                & ! density residual
-                        kerr,                & ! keff residual
-                        mean_s                 !
+    double precision :: k,                       & ! temporary current keff
+                        k_o,                     & ! temporary past keff
+                        s(number_assemblies),    & ! fission density
+                        s_o(number_assemblies),  & ! temporay density (inners)
+                        s_oo(number_assemblies), & ! temporary density (outers)
+                        k_num,                   & ! numerator in keff
+                        k_den,                   & ! denomenator in keff
+                        serr,                    & ! density residual
+                        kerr,                    & ! keff residual
+                        mean_s                     !
 
     ! Initialize the fission source and normalize
     s = 1.0 / sqrt(dble(number_assemblies))
@@ -87,8 +87,6 @@ contains
          
       ! Inner iteration
       INNER: do i = 1, max_inners
-
-        !$OMP DO
         s_o = s
         do p = 1, number_assemblies
           s(p) = wpp(p) * s_o(p)
@@ -100,8 +98,6 @@ contains
           end do
           s(p) = s(p) * KINF(pattern(p)) / k
         end do
-        !$OMP END DO
-
       end do INNER
       s = s / norm(s)
 
@@ -142,7 +138,7 @@ contains
   end subroutine solve
 
   !============================================================================!
-  !> @brief Compute the L2 norm of an array of values
+  !> @brief Perform a depletion sequence
   !============================================================================!
   subroutine burn()
 
@@ -154,8 +150,6 @@ contains
     burnup = 0.0
     burnup1 = 0.0
     keff1 = 0.0
-
-    !$OMP PARALLEL
 
     call solve()
 
@@ -223,8 +217,6 @@ contains
 
     end do BURNITS
 
-    !$OMP END PARALLEL
-
     if (burnup_option == 1) then
       ! compute final cl estimate based on latest info
       cycle_length = burnup + &
@@ -232,8 +224,6 @@ contains
     else
       cycle_length = burnup
     end if
-
-
 
   end subroutine burn
 

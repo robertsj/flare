@@ -3,10 +3,6 @@
 !
 !> @author Jeremy Roberts (jaroberts@ksu.edu)
 !> @brief A simple 2-d nodal code
-!>
-!> Most of the equations used here follow 
-!>    Gupta, N. K., "Nodal Methods for Three-Dimensional Simulators",
-!>        Progress in Nuclear Energy, 7, pp 127-149 (1981)
 !==============================================================================!
 program flare
 
@@ -19,18 +15,9 @@ program flare
 
   implicit none
 
-#ifdef PAPI
-#include "f90papi.h"
-#endif
-
   ! temporary variables for reading in
   character(80)  :: inputfile
   integer :: io, uinp = 5, i
-
-  ! variables for PAPA (optional)
-  integer :: check
-  real :: real_time, proc_time, mflops
-  integer*8 :: flpins
 
   namelist /material_options/ number_materials, material_source
   namelist /geometry_options/ number_assemblies, stencil_dimension,  delta
@@ -129,23 +116,7 @@ program flare
   ! SOLVE
   !============================================================================!
 
-#ifdef PAPI
-  i = 2
-  call PAPIf_num_counters(j)
-  if (i > j) stop "Not enough hardware counters!"
-  call PAPIf_flops(real_time, proc_time, flpins, mflops, check)
-  if (check < PAPI_OK) stop "Error starting PAPI ", check, PAPI_OK
-#endif
-
-  do i = 1, 10000
-    call burn()
-  end do
-
-#ifdef PAPI
-  call PAPIf_flops( real_time, proc_time, flpins, mflops, check )
-  print *, 'Real_time: ', real_time, ' Proc_time: ', proc_time, &
-           ' Total flpins: ', flpins, ' MFLOPS: ', mflops
-#endif
+  call burn()
 
   !============================================================================!
   ! POST PROCESS, etc.
@@ -154,8 +125,7 @@ program flare
   call print_state()
   call print_map(assembly_peaking, "ASSEMBLY_PEAKING", GEOMETRY_INDEXED)
   call print_map(B, "ASSEMBLY_BURNUP", MATERIAL_INDEXED)
-  !call print_map(BP, "ASSEMBLY_BP", MATERIAL_INDEXED)
-  !end if
+
 
   call deallocate_geometry()
 
