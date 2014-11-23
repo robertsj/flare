@@ -38,8 +38,8 @@ ifeq ($(COMPILER),gnu)
 
   F90 = gfortran
   F90FLAGS = -cpp -fbacktrace -ffree-line-length-none -fPIC 
-  LDFLAGS = -L/home/robertsj/opt/papi/lib/
   LIB = 
+  INCLUDE =
  
   # Debugging
   ifeq ($(DEBUG),yes)
