@@ -33,10 +33,10 @@ integer, parameter :: WABA = 2
 integer, parameter :: GAD = 3
  
 ! Burnup cutoffs for parts of each fit
-double precision, parameter :: XE_CUTOFF   = 0.1
-double precision, parameter :: IFBA_CUTOFF = 30.0
-double precision, parameter :: GAD_CUTOFF  = 15.0
-double precision, parameter :: WABA_CUTOFF = 22.5
+real(8), parameter :: XE_CUTOFF   = 0.1
+real(8), parameter :: IFBA_CUTOFF = 30.0
+real(8), parameter :: GAD_CUTOFF  = 15.0
+real(8), parameter :: WABA_CUTOFF = 22.5
  
 contains
 
@@ -44,17 +44,17 @@ contains
 !> Set the minimal coefficient set based on burnup, enrichment, and poison
 subroutine set_flare_data(B, E, BP, KINF, M2, KAPPA)
   !> Burnup
-  double precision, intent(in) :: B
+  real(8), intent(in) :: B
   !> Enrichment
-  double precision, intent(in) :: E
+  real(8), intent(in) :: E
   !> Burnable poison option
   integer, intent(in)          :: BP
   !> Infinite multiplication factor
-  double precision, intent(out) :: KINF
+  real(8), intent(out) :: KINF
   !> Migration area
-  double precision, intent(out) :: M2
+  real(8), intent(out) :: M2
   !> Energy release per fission
-  double precision, intent(out) :: KAPPA
+  real(8), intent(out) :: KAPPA
 
   ! Set the data for no burnable poison, as all other values are
   ! defined as corrections to this data
@@ -73,8 +73,8 @@ end subroutine set_flare_data
 
 !------------------------------------------------------------------------------!
 subroutine set_flare_data_nobp(B, E, KINF, M2, KAPPA)
-  double precision, intent(in) :: B, E
-  double precision, intent(out) :: KINF, M2, KAPPA
+  real(8), intent(in) :: B, E
+  real(8), intent(out) :: KINF, M2, KAPPA
   ! Cutoff breaks the data into more easily-represented segments
   if (B < XE_CUTOFF) then
     KINF = get_K_INF_XE_0(B, E)
@@ -89,8 +89,8 @@ end subroutine set_flare_data_nobp
 
 !------------------------------------------------------------------------------!
 subroutine set_flare_data_ifba(B, E, KINF, M2, KAPPA)
-  double precision, intent(in) :: B, E
-  double precision, intent(out) :: KINF, M2, KAPPA
+  real(8), intent(in) :: B, E
+  real(8), intent(out) :: KINF, M2, KAPPA
   ! Cutoffs break the data into more easily-represented segments
   if (B < XE_CUTOFF) then
     KINF = KINF - get_K_INF_XE_IFBA_DIFF_0(B, E)
@@ -109,8 +109,8 @@ end subroutine set_flare_data_ifba
 
 !------------------------------------------------------------------------------!
 subroutine set_flare_data_waba(B, E, KINF, M2, KAPPA)
-  double precision, intent(in) :: B, E
-  double precision, intent(out) :: KINF, M2, KAPPA
+  real(8), intent(in) :: B, E
+  real(8), intent(out) :: KINF, M2, KAPPA
   ! Cutoffs break the data into more easily-represented segments
   if (B < XE_CUTOFF) then
     KINF = KINF - get_K_INF_XE_WABA_DIFF_0(B, E)
@@ -129,8 +129,8 @@ end subroutine set_flare_data_waba
 
 !------------------------------------------------------------------------------!
 subroutine set_flare_data_gad(B, E, KINF, M2, KAPPA)
-  double precision, intent(in) :: B, E
-  double precision, intent(out) :: KINF, M2, KAPPA
+  real(8), intent(in) :: B, E
+  real(8), intent(out) :: KINF, M2, KAPPA
   ! Cutoffs break the data into more easily-represented segments
   if (B < XE_CUTOFF) then
     KINF = KINF - get_K_INF_XE_GAD_DIFF_0(B, E)
@@ -150,9 +150,9 @@ end subroutine set_flare_data_gad
 !------------------------------------------------------------------------------!
 !> Set the two-group data based on burnup, enrichment, and burnable poison
 subroutine set_two_group_data(B, E, BP, D1, D2, A1, A2, F1, F2, S12, NU)
-  double precision, intent(in) :: B, E
+  real(8), intent(in) :: B, E
   integer, intent(in) :: BP
-  double precision, intent(out) :: D1, D2, A1, A2, F1, F2, S12, NU
+  real(8), intent(out) :: D1, D2, A1, A2, F1, F2, S12, NU
 
   ! Set the data for no burnable poison, as all other values are 
   ! defined as corrections to this data
@@ -171,8 +171,8 @@ end subroutine set_two_group_data
 
 !------------------------------------------------------------------------------!
 subroutine set_two_group_data_nobp(B, E, D1, D2, A1, A2, F1, F2, S12, NU)
-  double precision, intent(in) :: B, E
-  double precision, intent(out) :: D1, D2, A1, A2, F1, F2, S12, NU
+  real(8), intent(in) :: B, E
+  real(8), intent(out) :: D1, D2, A1, A2, F1, F2, S12, NU
   ! Cutoffs break the data into more easily-represented segments
   if (B < XE_CUTOFF) then
     D1 = get_DIFF1_0(B, E)
@@ -197,8 +197,8 @@ end subroutine set_two_group_data_nobp
 
 !------------------------------------------------------------------------------!
 subroutine set_two_group_data_ifba(B, E, D1, D2, A1, A2, F1, F2, S12, NU)
-  double precision, intent(in) :: B, E
-  double precision, intent(out) :: D1, D2, A1, A2, F1, F2, S12, NU
+  real(8), intent(in) :: B, E
+  real(8), intent(out) :: D1, D2, A1, A2, F1, F2, S12, NU
   ! Cutoffs break the data into more easily-represented segments
   if (B < XE_CUTOFF) then
     D1 = D1 - get_DIFF1_IFBA_DIFF_0(B, E)
@@ -232,8 +232,8 @@ end subroutine set_two_group_data_ifba
 
 !------------------------------------------------------------------------------!
 subroutine set_two_group_data_waba(B, E, D1, D2, A1, A2, F1, F2, S12, NU)
-  double precision, intent(in) :: B, E
-  double precision, intent(out) :: D1, D2, A1, A2, F1, F2, S12, NU
+  real(8), intent(in) :: B, E
+  real(8), intent(out) :: D1, D2, A1, A2, F1, F2, S12, NU
   ! Cutoffs break the data into more easily-represented segments
   if (B < XE_CUTOFF) then
     D1 = D1 - get_DIFF1_WABA_DIFF_0(B, E)
@@ -267,8 +267,8 @@ end subroutine set_two_group_data_waba
 
 !------------------------------------------------------------------------------!
 subroutine set_two_group_data_gad(B, E, D1, D2, A1, A2, F1, F2, S12, NU)
-  double precision, intent(in) :: B, E
-  double precision, intent(out) :: D1, D2, A1, A2, F1, F2, S12, NU
+  real(8), intent(in) :: B, E
+  real(8), intent(out) :: D1, D2, A1, A2, F1, F2, S12, NU
   ! Cutoffs break the data into more easily-represented segments
   if (B < XE_CUTOFF) then
     D1 = D1 - get_DIFF1_GAD_DIFF_0(B, E)

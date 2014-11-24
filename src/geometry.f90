@@ -48,7 +48,7 @@ module geometry
   !> Stencil dimension
   integer :: stencil_dimension
   !> Size of assemblies (cm)
-  double precision :: delta
+  real(8) :: assembly_width
 
 contains
 
@@ -70,13 +70,13 @@ contains
   !>
   !> This must be called before loading a new core configuration.
   !============================================================================!
-  subroutine deallocate_geometry()
+  subroutine finalize_geometry()
     if (allocated(stencil)) deallocate(stencil)
     if (allocated(pattern)) deallocate(pattern)
     if (allocated(neighbors)) deallocate(neighbors)
     if (allocated(number_neighbors)) deallocate(number_neighbors)
     if (allocated(number_per_row)) deallocate(number_per_row)
-  end subroutine deallocate_geometry
+  end subroutine finalize_geometry
 
   !============================================================================!
   !> @brief Build the neighbor list and related items.

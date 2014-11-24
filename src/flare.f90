@@ -19,12 +19,19 @@ program flare
   character(80)  :: inputfile
   integer :: io, uinp = 5, i
 
-  namelist /material_options/ number_materials, material_source
-  namelist /geometry_options/ number_assemblies, stencil_dimension,  delta
-  namelist /solver_options/   verbose, max_inners, max_outers, ktol, stol, &
-                              number_burnup_steps, burnup_option, &
-                              reactor_power, assembly_mass
-  namelist /model_options/    mixing_factor, alpha1, alpha2
+  namelist /material_options/ number_materials, material_source, &
+                              database_name
+  namelist /reactor_options/  reactor_power, assembly_mass, &
+                              number_assemblies, stencil_dimension, &
+                              assembly_width
+  namelist /solver_options/   run_mode, & 
+                              max_burnup_steps, &
+                              axial_leakage, &
+                              verbose, &
+                              max_inner_iters, max_outer_iters, &
+                              max_boron_iters, &
+                              k_tol, s_tol, b_tol, t_tol, &
+                              mixing_factor, alpha1, alpha2
 
 
   !============================================================================!
@@ -42,11 +49,10 @@ program flare
 
   ! Read namelists
   read (uinp, nml=material_options)
-  read (uinp, nml=geometry_options)
+  read (uinp, nml=reactor_options)
   read (uinp, nml=solver_options)
-  read (uinp, nml=model_options)
 
-  if (verbose > 0) then
+  if (.true.) then
     print *, ""
     print *, "=========================="
     print *, "= a FLARE implementation ="
@@ -57,51 +63,69 @@ program flare
 
   ! Initialize geometry and read in stencil
   call initialize_geometry()
+  
   read (uinp,'(a)') ! read the comment line
   do i = 1, stencil_dimension
     read (uinp, *) stencil(i, :)
   end do
 
-  ! Read in cross section data.  If a cycle is to be run, then the number
-  ! of materials specified must be at least as great as the number of
-  ! assemblies.  This allows a database of different materials (i.e.,
-  ! potential assemblies) to be
-  ! defined of which only a subset is used in a given pattern.  If, instead,
-  ! assemblies could be assigned identical materials, then there is no
-  ! good way to redefine those materials after the burnup of each assembly
-  ! diverges in a cycle.
-  call allocate_material_data(number_materials)
+  ! Initialize material data and read in parameters
+  call initialize_material_data(number_materials)
 
-  if (material_source == MODEL_MATERIAL) then
-    ! read parameters to compute data from the built-in fits
-    do i = 1, number_materials
-      read (uinp,'(a)')
-      read (uinp, *) B(i), E(i), BP(i)
-    end do
-  else
-    ! otherwise, read two-group data directly
-    read (uinp,'(a)') ! read the comment line
-    read (uinp, *) D1
-    read (uinp,'(a)') ! read the comment line
-    read (uinp, *) D2
-    read (uinp,'(a)') ! read the comment line
-    read (uinp, *) A1
-    read (uinp,'(a)') ! read the comment line
-    read (uinp, *) A2
-    read (uinp,'(a)') ! read the comment line
-    read (uinp, *) F1
-    read (uinp,'(a)') ! read the comment line
-    read (uinp, *) F2
-    read (uinp,'(a)') ! read the comment line
-    read (uinp, *) S12
-  end if
-  call compute_flare_parameters()
+  select case (material_source)
+  
+    case (MATERIAL_SOURCE_INPUT_FLARE)
+    
+      print *, "MATERIAL SOURCE: Reading FLARE parameters."
+      do i = 1, number_materials
+        read (uinp,'(a)')
+        read (uinp, *) KINF(i), M2(i) 
+      end do
+      
+    case (MATERIAL_SOURCE_INPUT_2G)
+    
+      print *, "MATERIAL SOURCE: Reading two-group parameters."
+      do i = 1, number_materials
+        read (uinp,'(a)')
+        read (uinp, *) D1(i), D2(i), A1(i), A2(i), F1(i), F2(i), S12(i)
+      end do
+      
+      call compute_flare_parameters()
+    
+    case (MATERIAL_SOURCE_BUILT_IN)
+    
+      print *, "MATERIAL SOURCE: Using built-in data model."
 
-  if (number_burnup_steps > 0) then
-    allocate(burnup_steps(number_burnup_steps))
+      do i = 1, number_materials
+        read (uinp,'(a)')
+        read (uinp, *) B(i), E(i), BP(i)
+      end do
+      
+    case (MATERIAL_SOURCE_DATABASE)
+    
+      print *, "MATERIAL SOURCE: Using database in ", trim(database_name)
+
+      stop "FATAL ERROR: Not yet implemented."
+
+      do i = 1, number_materials
+        read (uinp,'(a)')
+        read (uinp, *) B(i), HT_F(i), HT_C(i), HBC(i)
+      end do
+      
+    case default
+    
+      stop "FATAL ERROR: Invalid material source."
+      
+  end select
+
+  ! Initialize solver
+  call initialize_solver()
+  
+  if (max_burnup_steps > 0) then
     read (uinp,'(a)') ! read the comment line
     read (uinp, *) burnup_steps
   end if
+
 
   !============================================================================!
   ! SETUP
@@ -110,13 +134,12 @@ program flare
   call initialize_state()
   call build_geometry()
   call initialize_coefficients()
-  call initialize_solver()
 
   !============================================================================!
   ! SOLVE
   !============================================================================!
 
-  call burn()
+  call solve()
 
   !============================================================================!
   ! POST PROCESS, etc.
@@ -124,9 +147,14 @@ program flare
 
   call print_state()
   call print_map(assembly_peaking, "ASSEMBLY_PEAKING", GEOMETRY_INDEXED)
-  call print_map(B, "ASSEMBLY_BURNUP", MATERIAL_INDEXED)
+  
+  if (allocated(B)) then
+    call print_map(B, "ASSEMBLY_BURNUP", MATERIAL_INDEXED)
+  end if
+  if (allocated(E)) then
+    call print_map(KINF, "ASSEMBLY_ENRICHMENT", MATERIAL_INDEXED)
+  end if
 
-
-  call deallocate_geometry()
+  call finalize_geometry()
 
 end program flare

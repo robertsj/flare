@@ -3,7 +3,7 @@
 !
 !> @author Jeremy Roberts
 !>
-!> @brief State vectors (i.e. the solution right now)
+!> @brief State vectors (i.e., the solution right now)
 !==============================================================================!
 module state
 
@@ -11,24 +11,33 @@ module state
 
   implicit none
 
-  !> Eigenvalue
-  double precision :: keff
+  !> Multipplication factor
+  real(8) :: keff
 
   !> Assembly power peaking factors
-  double precision, allocatable :: assembly_peaking(:)
+  real(8), allocatable :: assembly_peaking(:)
 
   !> Power peaking map
-  double precision, allocatable :: peaking_map(:, :)
+  real(8), allocatable :: peaking_map(:, :)
+  
+  !> (Instantaneous) fuel temperature (K)
+  real(8), allocatable :: T_F(:)
+  
+  !> (Instantaneous) coolant temperature (K)
+  real(8), allocatable :: T_C(:)
+
+  !> (Instantaneous) boron concentration (ppm)
+  real(8) :: BC 
 
   !> Maximum assembly power peaking factor
-  double precision :: mappf
+  real(8) :: mappf
 
   !> Burnup at which the max peaking was computed
-  double precision :: mappf_bu
+  real(8) :: mappf_bu
 
   !> Cycle length (i.e., burnup at keff = 1.0)
-  double precision :: cycle_length
-
+  real(8) :: cycle_length
+  
 contains
 
   !=============================================================================
@@ -63,14 +72,14 @@ contains
   !=============================================================================
   !> @brief Return keff
   !=============================================================================
-  double precision function get_keff()
+  real(8) function get_keff()
     get_keff = keff
   end function get_keff
 
   !=============================================================================
   !> @brief Return maximum power peaking factor
   !=============================================================================
-  double precision function get_mppf()
+  real(8) function get_mppf()
     get_mppf = mappf
   end function get_mppf
 

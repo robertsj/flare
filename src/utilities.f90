@@ -2,7 +2,7 @@
 ! MODULE: utilities
 !
 !> @author Jeremy Roberts
-!> @brief Routines for printing output, etc.
+!> @brief Routines for reading input, printing output, etc.
 !==============================================================================!
 
 module utilities
@@ -28,11 +28,11 @@ contains
 
   !============================================================================!
   subroutine print_map_d(f, s, flag)
-    double precision, dimension(:), intent(in) :: f
+    real(8), dimension(:), intent(in) :: f
     character(len = *), intent(in) :: s
     logical, intent(in) :: flag
     ! local
-    double precision, allocatable, dimension(:, :) :: map
+    real(8), allocatable, dimension(:, :) :: map
     integer :: i, j, k
     
     allocate(map(stencil_dimension, stencil_dimension))

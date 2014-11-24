@@ -23,7 +23,7 @@ utilities.o
 #===============================================================================
 
 COMPILER = gnu
-DEBUG    = no
+DEBUG    = yes
 OPTIMIZE = yes
 PROFILE  = no
 PYTHON   = yes

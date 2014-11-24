@@ -1,43 +1,61 @@
 !==============================================================================!
-! MODULE: solve
+! MODULE: solver
 !
 !> @author Jeremy Roberts
-!> @brief  Provides an implementation of the FLARE model with burnup
+!> @brief  Provides an implementation of the FLARE model 
+!>
+!> Several solvers modes are implemented, including a standard eigenvalue 
+!> iteration (with or without feedback), critical boron search, and depletion
 !==============================================================================!
 module solver
 
   use coefficients
   use geometry, only: pattern, number_assemblies, number_neighbors, neighbors
   use state
-  use material_data, only: compute_flare_parameters
+  use material_data
+  use utilities
 
   implicit none
-
+  
   !> Maximum number of inners
-  integer :: max_inners = 10
+  integer :: max_inner_iters = 10
   !> Maximum number of outers
-  integer :: max_outers = 100
-  !> Eigenvalue tolerance
-  double precision :: ktol = 0.0001_8
-  !> Fission source tolerance
-  double precision :: stol = 0.001_8
+  integer :: max_outer_iters = 100
+  !> Maximum number of boron search iterations
+  integer :: max_boron_iters = 10
+  !> Eigenvalue tolerance (absolute, relative error in pcm)
+  real(8) :: k_tol = 1.0_8
+  !> Fission source tolerance (on maximum, absolute, relative error)
+  real(8) :: s_tol = 0.001_8
+  !> Temperature tolerance (on maximum, absolute, relative error)
+  real(8) :: t_tol = 0.1_8
+  !> Boron tolerance (absolute error in ppm)
+  real(8) :: b_tol = 2.0_8
   !> Flag to print solver diagnostics
   integer :: verbose = 0
-
+  !> Axial leakage
+  real(8) :: axial_leakage
+  !> Differential boron worth (pcm per ppm)
+  real(8) :: boron_worth = -10_8
   !> Reactor power (thermal) in GW
-  double precision :: reactor_power = 0.0_8
+  real(8) :: reactor_power = 0.0_8
   !> Assembly HM mass (MTU), from WH PWR book for 4-loop plant with "OFA" fuel
-  double precision :: assembly_mass = .423 !0.483 !0.423_8
-  !> Burnup option (0 = user steps, 1 = automated cycle length calculation)
-  integer :: burnup_option = 0
+  real(8) :: assembly_mass = .423 !0.483 !0.423_8
+  !> Solver mode (0 = user steps, 1 = automated cycle length calculation)
+  integer :: run_mode = 2
+  integer :: feedback_mode = 0
+  integer :: burnup_mode = 0
+  integer :: boron_mode = 0
   !> Number of burnup steps
-  integer :: number_burnup_steps = 0
+  integer :: max_burnup_steps = 0
   !> Burnup steps (full power days)
-  double precision, allocatable, dimension(:) :: burnup_steps
+  real(8), allocatable, dimension(:) :: burnup_steps
 
-  double precision, private :: average_assembly_power
-  double precision, private :: power_per_mass
-  double precision, private :: mappf_cycle
+  real(8), private :: average_assembly_power
+  real(8), private :: power_per_mass
+  real(8), private :: mappf_cycle
+  
+  logical :: depletion, boron, feedback 
 
 contains
 
@@ -45,23 +63,94 @@ contains
   !> @brief Initialize.
   !============================================================================!
   subroutine initialize_solver()
-    ! nothing for now
-    ! make sure to deallocate before allocating
+    allocate (burnup_steps(max_burnup_steps))
   end subroutine initialize_solver
+  
+  !============================================================================!
+  !> @brief Finalize.
+  !============================================================================!
+  subroutine finalize_solver()
+    if (allocated(burnup_steps)) then
+      deallocate(burnup_steps)
+    end if
+  end subroutine finalize_solver
 
   !============================================================================!
-  !> @brief Solve the eigenvalue problem for a single configuration.
+  !> @brief Solve the problem
+  !============================================================================!
+  subroutine solve()
+  
+    select case(run_mode)
+  
+      ! Eigenvalue with no feedback
+      case (0)
+      
+        print *, "RUN MODE: Solving the eigenvalue problem without feedback."
+        call balance()
+    
+      ! Cycle-length with no feedback and no boron search
+      case (1)
+      
+        print *, "RUN MODE: Computing cycle length without feedback and ", &
+                 "without boron."
+
+        if (material_source < MATERIAL_SOURCE_BUILT_IN) then
+          stop "FATAL ERROR: Burnup requires built-in or database materials."
+        end if
+        
+        call burn()
+    
+      ! Eigenvalue with feedback
+      case (2) 
+      
+        print *, "RUN MODE: Solving the eigenvalue problem with feedback."
+      
+        if (material_source < MATERIAL_SOURCE_DATABASE) then
+          stop "FATAL ERROR: Burnup requires built-in or database materials."
+        end if
+        
+        stop "NOT IMPLEMENTED"
+      
+      ! Critical boron search with feedback.
+      case (3)
+      
+        if (material_source < MATERIAL_SOURCE_DATABASE) then
+          stop "FATAL ERROR: Feedback requires database materials."
+        end if
+        
+        stop "NOT IMPLEMENTED"
+
+      ! Cycle-length with feedback and boron search
+      case (4)
+      
+        if (material_source < MATERIAL_SOURCE_DATABASE) then
+          stop "FATAL ERROR: Feedback requires database materials."
+        end if
+        
+        stop "NOT IMPLEMENTED"
+
+      case default
+    
+        stop "FATAL ERROR: Invalid solver mode."
+    
+    end select
+  
+  
+  end subroutine solve
+
+
+  !============================================================================!
+  !> @brief Solve the k-eigenvalue problem for a single configuration.
   !>
   !> The solution approach is pretty simple, using a series of Jacobi inner
   !> iterations followed by outer k-updates.  The bounds were found to yield
   !> convergence in about 70 iterations for a "typical" problem.   (Having 
   !> some inners helps avoid "false" convergence, too)
   !============================================================================!
-  subroutine solve()
-    implicit none
-    ! local
+  subroutine balance()
+
     integer :: i, j, p, q, qq
-    double precision :: k,                       & ! temporary current keff
+    real(8) ::          k,                       & ! temporary current keff
                         k_o,                     & ! temporary past keff
                         s(number_assemblies),    & ! fission density
                         s_o(number_assemblies),  & ! temporay density (inners)
@@ -78,15 +167,18 @@ contains
     ! Guess k = 1
     k = 1.0
     
+    ! Update nodal parameters
+    call compute_flare_parameters()
+    
     ! Update coefficients
     call build_coefficients()
 
     ! Outer iteration
-    OUTER: do j = 1, max_outers
+    OUTER: do j = 1, max_outer_iters
       s_oo = s       
          
       ! Inner iteration
-      INNER: do i = 1, max_inners
+      INNER: do i = 1, max_inner_iters
         s_o = s
         do p = 1, number_assemblies
           s(p) = wpp(p) * s_o(p)
@@ -114,7 +206,7 @@ contains
       ! Update errors and check for convergence
       kerr = abs(k - k_o)
       serr = norm(s - s_oo) 
-      if  (kerr < ktol .and. serr < stol) then
+      if  (kerr < k_tol .and. serr < s_tol) then
         exit
       end if
 
@@ -135,26 +227,61 @@ contains
       print '(a, f10.6)', "   fd resid = ", serr
       print *, "------------------------------"
     end if
-  end subroutine solve
+  end subroutine balance
+  
+  !============================================================================!
+  !> @brief Determine the critical boron concentration.
+  !============================================================================!
+  subroutine critical_boron_search(target_keff)
+    real(8), intent(in) :: target_keff ! Target multiplication factor
+    real(8) :: BC0, keff0
+    integer :: i
+    
+    BC0 = BC
+    BC  = BC0 + (target_keff-keff)/boron_worth
+    
+    do i = 1, max_boron_iters
+    
+      if (verbose .ge. 2) then
+        print *, "BC ITER ", i, " BC = ", BC
+      end if
+    
+      if (abs(BC - BC0) < b_tol) then
+        exit
+      end if
+      
+      ! Update the eigenvalue
+      keff0 = keff
+      call balance()
+            
+      ! Update the estimated differential boron worth.  
+      boron_worth = (keff-keff0)/(BC-BC0)*1.0e5
+      
+      ! Update the critical boron concentration
+      BC0 = BC
+      BC = BC0 + 1.0e5*(target_keff-keff)/boron_worth
+      
+    end do
+    
+  end subroutine critical_boron_search
 
   !============================================================================!
   !> @brief Perform a depletion sequence
   !============================================================================!
   subroutine burn()
 
-    implicit none
-
     integer :: i
-    double precision :: burnup_step, fpd, burnup, burnup1, keff1
+    real(8) :: burnup_step, fpd, burnup, burnup1, keff1
     fpd = 0.0
     burnup = 0.0
     burnup1 = 0.0
     keff1 = 0.0
 
-    call solve()
-
+    ! initial keff 
+    call balance()
+    
     ! just get the power distribution and escape if not burning
-    if (number_burnup_steps == 0) then
+    if (max_burnup_steps == 0) then
       return
     end if
 
@@ -170,23 +297,23 @@ contains
     ! DEBUG checks
     if (number_assemblies > number_materials) then
       stop "The number of materials must be equal to or greater &
-            than the number of assemblies for cycle depletions."
+            & than the number of assemblies for cycle depletions."
     end if
     do i = 1, number_materials
       if (count(pattern == i) > 1) then
         stop "Non-unique material assignment for a burnup problem &
-              is not allowed."
+              & is not allowed."
       end if
     end do
 
     call print_burnup_header()
     call print_burnup(0, burnup, fpd, mappf, mappf, keff, cycle_length)
 
-    BURNITS: do i = 1, number_burnup_steps
+    BURNITS: do i = 1, max_burnup_steps
 
       ! select the burnup step
       burnup_step = burnup_steps(i)
-      if (burnup_option == 1 .and. i > 2) then
+      if (i > 2) then
         burnup_step = critical_step(keff, keff1, burnup, burnup1)
         ! estimated cycle length
         cycle_length = burnup_step * power_per_mass + burnup
@@ -196,14 +323,13 @@ contains
       end if
 
       call update_assembly_burnup(burnup_step)
-      call compute_flare_parameters()
 
       ! record old values and update new ones
       burnup1 = burnup
       keff1   = keff
       burnup  = burnup + burnup_step * power_per_mass
       fpd     = fpd + burnup_step
-      call solve()
+      call balance()
 
       if (mappf > mappf_cycle) then
         mappf_cycle = mappf
@@ -212,18 +338,12 @@ contains
 
       call print_burnup(i, burnup, fpd, mappf_cycle, mappf, keff, cycle_length)
 
-      if (burnup_option == 1 .and. &
-         (keff <= 1.0 .or. abs(burnup-burnup1) <= ktol)) exit
+      if (keff <= 1.0 .or. abs(burnup-burnup1) <= k_tol) exit
 
     end do BURNITS
 
-    if (burnup_option == 1) then
-      ! compute final cl estimate based on latest info
-      cycle_length = burnup + &
-                     critical_step(keff,keff1,burnup,burnup1)*power_per_mass
-    else
-      cycle_length = burnup
-    end if
+    cycle_length = burnup + &
+                   critical_step(keff,keff1,burnup,burnup1)*power_per_mass
 
   end subroutine burn
 
@@ -231,7 +351,7 @@ contains
   !> @brief Update the burnup for each assembly
   !============================================================================!
   subroutine update_assembly_burnup(step)
-    double precision, intent(in) :: step
+    real(8), intent(in) :: step
     integer :: i
     do i = 1, number_assemblies
       B(pattern(i)) = B(pattern(i)) + &
@@ -242,9 +362,9 @@ contains
   !============================================================================!
   !> @brief Estimate step to reach critical based on linear reactivity
   !============================================================================!
-  double precision function critical_step(k0, k1, b0, b1)
-    double precision, intent(in) :: k0, k1, b0, b1
-    double precision :: p0, p1
+  real(8) function critical_step(k0, k1, b0, b1)
+    real(8), intent(in) :: k0, k1, b0, b1
+    real(8) :: p0, p1
     p0 = (k0-1.0)/k0
     p1 = (k1-1.0)/k1
     critical_step = (-(1.*(p1*b0-1.*b1*p0))/(p0-1.*p1)-b0) / power_per_mass
@@ -254,12 +374,12 @@ contains
   !============================================================================!
   subroutine print_burnup_header()
     if (verbose > 0) then
-
-      if (burnup_option == 0) then
-        print *, " *** BURNUP CALCULATION WITH USER-SPECIFED BURNUP STEPS ***"
-      elseif (burnup_option == 1) then
-        print *, " *** BURNUP CALCULATION FOR DETERMINATION OF CYCLE LENGTH ***"
-      end if
+      !if (burnup_option == 0) then
+      !  print *, " *** BURNUP CALCULATION WITH USER-SPECIFED BURNUP STEPS ***"
+      !elseif (burnup_option == 1) then
+      !  print *, " *** BURNUP CALCULATION FOR DETERMINATION OF CYCLE LENGTH ***"
+      !end if
+      !print *, " *** CYCLE LENGTH CALCULATION***"
       print *, ""
       print *, &
         "   -------------------------------------------------------------------"
@@ -275,10 +395,10 @@ contains
   !============================================================================!
   subroutine print_burnup(i, bu, fpd, mappf_c, mppff_s, k, cl)
      integer, intent(in) :: i
-     double precision, intent(in) :: bu, fpd, mappf_c, mppff_s, k, cl
+     real(8), intent(in) :: bu, fpd, mappf_c, mppff_s, k, cl
      if (verbose > 0) then
        print '(a, i3, 7f10.4)', "     ", i, bu, fpd, mappf_c, mppff_s, k, cl
-       if (i == number_burnup_steps) then
+       if (i == max_burnup_steps) then
          print *, "   -----------------------------------&
            &--------------------------------"
        end if
@@ -288,8 +408,8 @@ contains
   !============================================================================!
   !> @brief Compute the L2 norm of an array of values
   !============================================================================!
-  double precision function norm(v)
-    double precision, intent(in) :: v(:)
+  real(8) function norm(v)
+    real(8), intent(in) :: v(:)
     integer :: i
     norm = 0.0
     do i = 1, size(v)

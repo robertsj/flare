@@ -2,21 +2,23 @@
 ! MODULE: coefficients
 !
 !> @author Jeremy Roberts
-!>
 !> @brief Coefficients for the neutron balance equation.
 !==============================================================================!
 module coefficients
 
   use material_data
-  use geometry, only: pattern, delta, number_assemblies, number_neighbors
+  use geometry, only: pattern, assembly_width, number_assemblies, &
+                      number_neighbors
 
   implicit none
 
   !> Coefficients
-  double precision, allocatable :: wpp(:), wqp(:), wleak(:)
+  real(8), allocatable :: wpp(:), & ! Self collision probability
+                          wqp(:), & ! Neigbor collision probability
+                          wleak(:)  ! 
 
   !> Model parameters (with defaults)
-  double precision :: mixing_factor=0.88, alpha1=0.3, alpha2=0.6
+  real(8) :: mixing_factor=0.88, alpha1=0.3, alpha2=0.6
 
 contains
 
@@ -35,7 +37,7 @@ contains
   !> @brief Set model parameters.
   !============================================================================
   subroutine set_model(g, a1, a2)
-    double precision, intent(in) :: g, a1, a2
+    real(8), intent(in) :: g, a1, a2
     mixing_factor = g
     alpha1 = a1
     alpha2 = a2
@@ -46,19 +48,17 @@ contains
   !>
   !> Note, elements are ordered left to right, top to bottom in normal bottom
   !> right quarter core.
-  !>
   !============================================================================
   subroutine build_coefficients()
-    integer :: i, j, k, n, id
-    double precision :: g1, g2, aI, aII ! flare model parameters
-    double precision :: w, gp, delta2
+    integer :: i, id
+    real(8) :: g1, g2, aI, aII ! flare model parameters
+    real(8) :: w
 
     ! Now, compute the coefficients, wpp and wqp.
-    g1 = 0.5 * (1.0 - mixing_factor) / delta
-    g2 = mixing_factor / delta**2
+    g1 = 0.5 * (1.0 - mixing_factor) / assembly_width
+    g2 = mixing_factor / assembly_width**2
     aI  = 1.0 - alpha1
     aII = 1.0 - alpha2
-    delta2 = delta**2
 
     do i = 1, number_assemblies
       ! Bundle id
@@ -89,4 +89,3 @@ contains
   end subroutine build_coefficients
 
 end module coefficients
-
