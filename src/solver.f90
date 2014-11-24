@@ -13,16 +13,17 @@ module solver
   use geometry, only: pattern, number_assemblies, number_neighbors, neighbors
   use state
   use material_data
-  use utilities
 
   implicit none
   
-  !> Maximum number of inners
-  integer :: max_inner_iters = 10
-  !> Maximum number of outers
-  integer :: max_outer_iters = 100
-  !> Maximum number of boron search iterations
-  integer :: max_boron_iters = 10
+  !> Solver mode
+  integer :: run_mode = 2
+  !> Number of burnup steps
+  integer :: max_burnup_steps = 0
+  !> Axial leakage
+  real(8) :: axial_buckling = 0.0001_8
+  !> Differential boron worth (pcm per ppm)
+  real(8) :: boron_worth = -10_8
   !> Eigenvalue tolerance (absolute, relative error in pcm)
   real(8) :: k_tol = 1.0_8
   !> Fission source tolerance (on maximum, absolute, relative error)
@@ -31,23 +32,26 @@ module solver
   real(8) :: t_tol = 0.1_8
   !> Boron tolerance (absolute error in ppm)
   real(8) :: b_tol = 2.0_8
+  !> Maximum number of inners
+  integer :: max_inner_iters = 10
+  !> Maximum number of outers
+  integer :: max_outer_iters = 100
+  !> Maximum number of boron search iterations
+  integer :: max_boron_iters = 10
+
   !> Flag to print solver diagnostics
   integer :: verbose = 0
-  !> Axial leakage
-  real(8) :: axial_leakage
-  !> Differential boron worth (pcm per ppm)
-  real(8) :: boron_worth = -10_8
+
+
   !> Reactor power (thermal) in GW
   real(8) :: reactor_power = 0.0_8
   !> Assembly HM mass (MTU), from WH PWR book for 4-loop plant with "OFA" fuel
-  real(8) :: assembly_mass = .423 !0.483 !0.423_8
-  !> Solver mode (0 = user steps, 1 = automated cycle length calculation)
-  integer :: run_mode = 2
-  integer :: feedback_mode = 0
-  integer :: burnup_mode = 0
-  integer :: boron_mode = 0
-  !> Number of burnup steps
-  integer :: max_burnup_steps = 0
+  real(8) :: assembly_mass = .423_8
+
+  logical :: do_burnup = .false.
+  logical :: do_feedback = .false.
+  logical :: do_boron = .false.
+
   !> Burnup steps (full power days)
   real(8), allocatable, dimension(:) :: burnup_steps
 
@@ -79,63 +83,23 @@ contains
   !> @brief Solve the problem
   !============================================================================!
   subroutine solve()
-  
-    select case(run_mode)
-  
-      ! Eigenvalue with no feedback
-      case (0)
-      
-        print *, "RUN MODE: Solving the eigenvalue problem without feedback."
-        call balance()
-    
-      ! Cycle-length with no feedback and no boron search
-      case (1)
-      
-        print *, "RUN MODE: Computing cycle length without feedback and ", &
-                 "without boron."
 
-        if (material_source < MATERIAL_SOURCE_BUILT_IN) then
-          stop "FATAL ERROR: Burnup requires built-in or database materials."
-        end if
-        
-        call burn()
-    
-      ! Eigenvalue with feedback
-      case (2) 
-      
-        print *, "RUN MODE: Solving the eigenvalue problem with feedback."
-      
-        if (material_source < MATERIAL_SOURCE_DATABASE) then
-          stop "FATAL ERROR: Burnup requires built-in or database materials."
-        end if
-        
-        stop "NOT IMPLEMENTED"
-      
-      ! Critical boron search with feedback.
-      case (3)
-      
-        if (material_source < MATERIAL_SOURCE_DATABASE) then
-          stop "FATAL ERROR: Feedback requires database materials."
-        end if
-        
-        stop "NOT IMPLEMENTED"
+    do_burnup = modulo(run_mode, 2) == 1
+    do_feedback = modulo(run_mode/2, 2) == 1
+    do_boron = modulo(run_mode/4, 2) == 1
 
-      ! Cycle-length with feedback and boron search
-      case (4)
-      
-        if (material_source < MATERIAL_SOURCE_DATABASE) then
-          stop "FATAL ERROR: Feedback requires database materials."
-        end if
-        
-        stop "NOT IMPLEMENTED"
+    if (verbose > 0) then
+      print *, " CYCLE DEPLETION: ", do_burnup
+      print *, "THERMAL FEEDBACK: ", do_feedback
+      print *, "CRICTICAL BURNUP: ", do_boron
+    end if
 
-      case default
-    
-        stop "FATAL ERROR: Invalid solver mode."
-    
-    end select
-  
-  
+    if (do_burnup) then
+      call burn()
+    else
+      call balance()
+    end if
+
   end subroutine solve
 
 
@@ -160,6 +124,7 @@ contains
                         serr,                    & ! density residual
                         kerr,                    & ! keff residual
                         mean_s                     !
+    real(8) :: kinf_leak(number_assemblies) ! kinf adjusted for axial leakage
 
     ! Initialize the fission source and normalize
     s = 1.0 / sqrt(dble(number_assemblies))
@@ -172,6 +137,11 @@ contains
     
     ! Update coefficients
     call build_coefficients()
+
+    ! Compute leakage-corrected infinite multiplication factor
+    do p = 1, number_assemblies
+      kinf_leak(p) = KINF(pattern(p)) / (1.0 + M2(pattern(p))*axial_buckling)
+    end do
 
     ! Outer iteration
     OUTER: do j = 1, max_outer_iters
@@ -188,7 +158,7 @@ contains
               s(p) = s(p) + wqp(qq)*s_o(qq)
             end if
           end do
-          s(p) = s(p) * KINF(pattern(p)) / k
+          s(p) = s(p) * kinf_leak(p) / k
         end do
       end do INNER
       s = s / norm(s)
@@ -197,11 +167,21 @@ contains
       k_o = k
       k_num = 0.0
       k_den = 0.0
-      do i = 1, number_assemblies
-        k_num = k_num + s(i)*wleak(i)
-        k_den = k_den + s(i)/KINF(pattern(i))
+      do p = 1, number_assemblies
+        k_num = k_num + s(p)*wleak(p)
+        k_den = k_den + s(p)/kinf_leak(p)
       end do
       k = (sum(s) - k_num) / k_den
+
+      ! Update temperatures
+      if (do_feedback) then
+        ! call thermal_feedback()
+      end if
+
+      ! Update boron concentration
+      if (do_boron) then
+        ! call critical_boron_search(1.0)
+      end if
 
       ! Update errors and check for convergence
       kerr = abs(k - k_o)
@@ -271,16 +251,19 @@ contains
   subroutine burn()
 
     integer :: i
-    real(8) :: burnup_step, fpd, burnup, burnup1, keff1
+    real(8) :: burnup_step, & !
+               fpd,         & !
+               burnup,      & !
+               burnup1,     & !
+               keff1
     fpd = 0.0
     burnup = 0.0
     burnup1 = 0.0
     keff1 = 0.0
 
-    ! initial keff 
     call balance()
+    mappf_cycle = mappf
     
-    ! just get the power distribution and escape if not burning
     if (max_burnup_steps == 0) then
       return
     end if
@@ -330,7 +313,6 @@ contains
       burnup  = burnup + burnup_step * power_per_mass
       fpd     = fpd + burnup_step
       call balance()
-
       if (mappf > mappf_cycle) then
         mappf_cycle = mappf
         mappf_bu    = burnup
@@ -419,4 +401,3 @@ contains
   end function norm
 
 end module solver
-

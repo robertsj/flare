@@ -127,13 +127,11 @@ contains
           KINF(i) = (F1(i) + F2(i) * S12(i)/A2(i)) / (A1(i)+S12(i))
           M2(i) = D1(i)/(A1(i)+S12(i)) + D2(i)/A2(i)
         end do
-        !KAPPA = 3.22e-11_8 ! roughly 200 MeV/fission
       
       case (MATERIAL_SOURCE_BUILT_IN)
       
         do i = 1, number_materials
           call set_flare_data(B(i), E(i), BP(i), KINF(i), M2(i), KAPPA(i))
-          KINF(i) = KINF(i) / (1.0 + M2(i)*0.0001_8)
         end do
       
       case (MATERIAL_SOURCE_DATABASE)

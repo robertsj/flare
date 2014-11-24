@@ -14,6 +14,7 @@ verbose=0
 mixing_factor=0.98850	
 alpha1=-0.13804	
 alpha2=-0.00405
+axial_buckling=0.0
 /
 \\\ Stencil. Nonzeros represent materials and zeros symmetry and reflector.
   1  8  2  6  1  7  1  4  0 

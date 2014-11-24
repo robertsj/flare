@@ -26,13 +26,14 @@ program flare
                               assembly_width
   namelist /solver_options/   run_mode, & 
                               max_burnup_steps, &
-                              axial_leakage, &
-                              verbose, &
-                              max_inner_iters, max_outer_iters, &
-                              max_boron_iters, &
+                              axial_buckling, &
+                              boron_worth, &
+                              mixing_factor, alpha1, alpha2, &
                               k_tol, s_tol, b_tol, t_tol, &
-                              mixing_factor, alpha1, alpha2
-
+                              max_inner_iters, &
+                              max_outer_iters, &
+                              max_boron_iters, &
+                              verbose
 
   !============================================================================!
   ! INPUT
@@ -76,7 +77,7 @@ program flare
   
     case (MATERIAL_SOURCE_INPUT_FLARE)
     
-      print *, "MATERIAL SOURCE: Reading FLARE parameters."
+      print *, " MATERIAL SOURCE: Reading FLARE parameters."
       do i = 1, number_materials
         read (uinp,'(a)')
         read (uinp, *) KINF(i), M2(i) 
@@ -84,7 +85,7 @@ program flare
       
     case (MATERIAL_SOURCE_INPUT_2G)
     
-      print *, "MATERIAL SOURCE: Reading two-group parameters."
+      print *, " MATERIAL SOURCE: Reading two-group parameters."
       do i = 1, number_materials
         read (uinp,'(a)')
         read (uinp, *) D1(i), D2(i), A1(i), A2(i), F1(i), F2(i), S12(i)
@@ -94,7 +95,7 @@ program flare
     
     case (MATERIAL_SOURCE_BUILT_IN)
     
-      print *, "MATERIAL SOURCE: Using built-in data model."
+      print *, " MATERIAL SOURCE: Using built-in data model."
 
       do i = 1, number_materials
         read (uinp,'(a)')
@@ -103,7 +104,7 @@ program flare
       
     case (MATERIAL_SOURCE_DATABASE)
     
-      print *, "MATERIAL SOURCE: Using database in ", trim(database_name)
+      print *, " MATERIAL SOURCE: Using database in ", trim(database_name)
 
       stop "FATAL ERROR: Not yet implemented."
 

@@ -1,0 +1,56 @@
+SMALL CORE OF FRESH FUEL
+&material_options
+material_source=2
+number_materials=12 
+/
+&reactor_options
+assembly_width=21.0
+stencil_dimension=5
+number_assemblies=12 
+reactor_power=0.800
+assembly_mass=0.43
+/
+&solver_options
+max_burnup_steps=35
+run_mode=1
+verbose=1
+max_inner_iters=200
+max_outer_iters=1000
+s_tol=0.00001
+k_tol=0.00001 
+mixing_factor=0.98850	
+alpha1=1
+alpha2=1
+/
+\\\ Stencil. Nonzeros represent materials and zeros symmetry and reflector.
+  1  2  3  4  0 
+ -1  5  6  7  0
+ -1  8  9 10  0
+ -1 11 12  0  0
+ -1  0  0  0  0
+\\ 1 
+   0.0 4.1 0
+\\ 2 
+   0.0 4.1 0
+\\ 3 
+   0.0 4.1 0
+\\ 4 
+   0.0 4.1 0
+\\ 5 
+   0.0 4.1 0
+\\ 6 
+   0.0 4.1 0
+\\ 7 
+   0.0 4.1 0
+\\ 8 
+   0.0 4.1 0
+\\ 9 
+   0.0 4.1 0
+\\ 10 
+   0.0 4.1 0
+\\ 11 
+   0.0 4.1 0
+\\ 12 
+   0.0 4.1 0
+\\\ burnup steps comes next (in full power days)
+    1.0 5.0 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 25. 

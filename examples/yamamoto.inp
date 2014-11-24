@@ -8,6 +8,7 @@ assembly_width=21.0
 stencil_dimension=9
 number_assemblies=49 
 reactor_power=3.411
+assembly_mass=0.43
 /
 &solver_options
 max_burnup_steps=35
