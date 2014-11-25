@@ -102,7 +102,6 @@ contains
 
   end subroutine solve
 
-
   !============================================================================!
   !> @brief Solve the k-eigenvalue problem for a single configuration.
   !>
@@ -294,12 +293,13 @@ contains
 
     BURNITS: do i = 1, max_burnup_steps
 
-      ! select the burnup step
+      ! select the burnup step (in full power days)
       burnup_step = burnup_steps(i)
       if (i > 2) then
         burnup_step = critical_step(keff, keff1, burnup, burnup1)
         ! estimated cycle length
         cycle_length = burnup_step * power_per_mass + burnup
+        ! choose lesser of user-defined step and estimated step
         if (burnup_step > burnup_steps(i) .or. burnup_step == 0.0) then
           burnup_step = burnup_steps(i)
         end if
@@ -349,7 +349,7 @@ contains
     real(8) :: p0, p1
     p0 = (k0-1.0)/k0
     p1 = (k1-1.0)/k1
-    critical_step = (-(1.*(p1*b0-1.*b1*p0))/(p0-1.*p1)-b0) / power_per_mass
+    critical_step = ((b1*p0-b0*p1)/(p0-p1)-b0) / power_per_mass
     if (critical_step < 0.0) critical_step = 0.0
   end function critical_step
 
