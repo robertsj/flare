@@ -42,7 +42,7 @@ contains
 
 !------------------------------------------------------------------------------!
 !> Set the minimal coefficient set based on burnup, enrichment, and poison
-subroutine set_flare_data(B, E, BP, KINF, M2, KAPPA)
+subroutine set_flare_data_1(B, E, BP, KINF, M2, KAPPA)
   !> Burnup
   real(8), intent(in) :: B
   !> Enrichment
@@ -69,7 +69,7 @@ subroutine set_flare_data(B, E, BP, KINF, M2, KAPPA)
     call set_flare_data_gad(B, E, KINF, M2, KAPPA)
   end if
 
-end subroutine set_flare_data
+end subroutine set_flare_data_1
 
 !------------------------------------------------------------------------------!
 subroutine set_flare_data_nobp(B, E, KINF, M2, KAPPA)
