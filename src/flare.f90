@@ -93,22 +93,13 @@ program flare
       
       call compute_flare_parameters()
     
-    case (MATERIAL_SOURCE_BUILT_IN_1)
+    case (MATERIAL_SOURCE_BUILT_IN)
     
-      print *, " MATERIAL SOURCE: Using built-in data model 1."
+      print *, " MATERIAL SOURCE: Using built-in data model."
 
       do i = 1, number_materials
         read (uinp,'(a)')
-        read (uinp, *) B(i), E(i), BP(i)
-      end do
-      
-    case (MATERIAL_SOURCE_BUILT_IN_2)
-
-      print *, " MATERIAL SOURCE: Using built-in data model 2."
-
-      do i = 1, number_materials
-        read (uinp,'(a)')
-        read (uinp, *) B(i), BP(i), HT_F(i), HT_C(i), HBC(i)
+        read (uinp, *) E(i), B(i), BP(i), HT_F(i), HT_C(i), HBC(i)
       end do
 
     case (MATERIAL_SOURCE_DATABASE)
@@ -116,11 +107,6 @@ program flare
       print *, " MATERIAL SOURCE: Using database in ", trim(database_name)
 
       stop "FATAL ERROR: Not yet implemented."
-
-      do i = 1, number_materials
-        read (uinp,'(a)')
-        read (uinp, *) B(i), HT_F(i), HT_C(i), HBC(i)
-      end do
       
     case default
     

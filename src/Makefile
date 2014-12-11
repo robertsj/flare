@@ -154,6 +154,8 @@ solver.o: material_data.o
 state.o: geometry.o
 
 material_data.o: nuclear_data.o
+material_data.o: geometry.o
+material_data.o: state.o
 
 nuclear_data.o: nuclear_data_NOBP.o
 nuclear_data.o: nuclear_data_IFBA.o
