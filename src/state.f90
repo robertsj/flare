@@ -54,6 +54,12 @@ contains
     mappf_bu = 0.0
     cycle_length = 0.0
 
+    ! Set the temperatures and boron concentration to the baseline values
+    ! used in the model.
+    T_F = 900.0
+    T_C = 580.0
+    BC  = 900.0
+
   end subroutine
 
   !=============================================================================

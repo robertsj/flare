@@ -114,7 +114,6 @@ program flare
       
   end select
 
-  ! Initialize solver
   call initialize_solver()
   
   if (max_burnup_steps > 0) then

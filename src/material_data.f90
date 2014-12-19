@@ -44,8 +44,6 @@ module material_data
   real(8), allocatable, dimension(:) :: F2
   !> Group 1 to 2 scattering cross section
   real(8), allocatable, dimension(:) :: S12
-  !> Average number of fission neutrons
-  real(8), allocatable, dimension(:) :: NU
   !> @}
 
   !> @name Data needed for FLARE model
@@ -54,10 +52,11 @@ module material_data
   real(8), allocatable, dimension(:) :: KINF
   !> Migration area
   real(8), allocatable, dimension(:) :: M2
-  !> @}
-
+  !> Average number of fission neutrons
+  real(8), allocatable, dimension(:) :: NU
   !> Energy release per fission (J)
   real(8), allocatable, dimension(:) :: KAPPA
+  !> @}
 
   !> @name Data required for internal model
   !> @{
